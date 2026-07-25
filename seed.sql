@@ -6,15 +6,15 @@
 -- ============================================================
 
 -- Users -------------------------------------------------------
--- 1: admin@yimu.com.tw  (Admin)
--- 2: manager@yimu.com.tw (Manager，帶團隊)
--- 3: alice@yimu.com.tw  (Sales, manager_id=2)
--- 4: bob@yimu.com.tw    (Sales, manager_id=2)
+-- 1: admin@onewood.com.hk  (Admin)
+-- 2: manager@onewood.com.hk (Manager，帶團隊)
+-- 3: alice@onewood.com.hk  (Sales, manager_id=2)
+-- 4: bob@onewood.com.hk    (Sales, manager_id=2)
 INSERT OR IGNORE INTO users (id, name, email, password_hash, role, manager_id, phone, is_active) VALUES
-  (1, '系統管理員', 'admin@yimu.com.tw',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'admin',   NULL, '0900-000-001', 1),
-  (2, '陳經理',     'manager@yimu.com.tw', '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'manager', NULL, '0900-000-002', 1),
-  (3, '王小美',     'alice@yimu.com.tw',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-003', 1),
-  (4, '林大同',     'bob@yimu.com.tw',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-004', 1);
+  (1, '系統管理員', 'admin@onewood.com.hk',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'admin',   NULL, '0900-000-001', 1),
+  (2, '陳經理',     'manager@onewood.com.hk', '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'manager', NULL, '0900-000-002', 1),
+  (3, '王小美',     'alice@onewood.com.hk',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-003', 1),
+  (4, '林大同',     'bob@onewood.com.hk',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-004', 1);
 
 -- Customers -----------------------------------------------------
 INSERT OR IGNORE INTO customers (id, company_name, tax_id, industry, status, source, address, city, website, credit_limit, owner_id) VALUES

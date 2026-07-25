@@ -3,22 +3,22 @@
 // ============================================================
 const Auth = {
   getToken() {
-    return localStorage.getItem('yimu_token')
+    return localStorage.getItem('onewood_token')
   },
   getUser() {
-    const raw = localStorage.getItem('yimu_user')
+    const raw = localStorage.getItem('onewood_user')
     return raw ? JSON.parse(raw) : null
   },
   isLoggedIn() {
     return !!this.getToken()
   },
   setSession(token, user) {
-    localStorage.setItem('yimu_token', token)
-    localStorage.setItem('yimu_user', JSON.stringify(user))
+    localStorage.setItem('onewood_token', token)
+    localStorage.setItem('onewood_user', JSON.stringify(user))
   },
   logout() {
-    localStorage.removeItem('yimu_token')
-    localStorage.removeItem('yimu_user')
+    localStorage.removeItem('onewood_token')
+    localStorage.removeItem('onewood_user')
     location.href = '/login'
   },
   requireAuth() {

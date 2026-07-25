@@ -82,10 +82,10 @@
 ## 測試帳號 (本地開發，密碼皆為 `password123`)
 | Email | 角色 | 說明 |
 |---|---|---|
-| admin@yimu.com.tw | admin | 系統管理員，可見全部資料 |
-| manager@yimu.com.tw | manager | 陳經理，可見自己+團隊(alice, bob)資料 |
-| alice@yimu.com.tw | sales | 王小美，僅可見自己客戶/報價 |
-| bob@yimu.com.tw | sales | 林大同，僅可見自己客戶/報價 |
+| admin@onewood.com.hk | admin | 系統管理員，可見全部資料 |
+| manager@onewood.com.hk | manager | 陳經理，可見自己+團隊(alice, bob)資料 |
+| alice@onewood.com.hk | sales | 王小美，僅可見自己客戶/報價 |
+| bob@onewood.com.hk | sales | 林大同，僅可見自己客戶/報價 |
 
 ## 資料架構
 - **儲存服務**：Cloudflare D1 (SQLite)，本地開發使用 `--local` 模式獨立 SQLite
