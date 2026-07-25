@@ -25,10 +25,6 @@ Pages.customerDetail = function (id) {
   comingSoon('customers', `客戶詳情 #${id}`, '客戶詳情頁（含聯絡人、跟進紀錄、歷史報價）將於下一階段開發完成。')
 }
 
-Pages.quoteDetail = function (id) {
-  comingSoon('quotes', `報價詳情 #${id}`, '報價詳情頁（含審批操作、寄送、轉訂單、PDF匯出）將於下一階段開發完成。')
-}
-
 Pages.products = function () {
   comingSoon('products', '產品目錄', '產品/服務項目管理頁面將於下一階段開發完成。')
 }

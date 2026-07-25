@@ -3,23 +3,30 @@ import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware } from '../middleware/auth'
 import { getVisibleOwnerIds, ownerScopeClause } from '../utils/scope'
+import { COMPANY_INFO } from '../types/company'
 
 const quotes = new Hono<{ Bindings: Bindings }>()
 quotes.use('*', authMiddleware)
 
+// 報價單號格式對齊實際業務單據：Q-YYMMDDxxx（如 Q-260512001）
 async function generateQuoteNo(db: D1Database): Promise<string> {
   const today = new Date()
-  const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
-  const prefix = `Q${dateStr}-`
+  const yy = String(today.getFullYear()).slice(2)
+  const mm = String(today.getMonth() + 1).padStart(2, '0')
+  const dd = String(today.getDate()).padStart(2, '0')
+  const dateStr = `${yy}${mm}${dd}`
+  const prefix = `Q-${dateStr}`
   const row = await db
     .prepare(`SELECT quote_no FROM quotes WHERE quote_no LIKE ? ORDER BY quote_no DESC LIMIT 1`)
     .bind(`${prefix}%`)
     .first<{ quote_no: string }>()
   let seq = 1
   if (row?.quote_no) {
-    seq = parseInt(row.quote_no.split('-')[1]) + 1
+    const seqStr = row.quote_no.slice(prefix.length)
+    const parsed = parseInt(seqStr)
+    if (!isNaN(parsed)) seq = parsed + 1
   }
-  return `${prefix}${String(seq).padStart(4, '0')}`
+  return `${prefix}${String(seq).padStart(3, '0')}`
 }
 
 function calcTotals(items: any[], discountType: string, discountValue: number, taxRate: number) {
@@ -104,18 +111,26 @@ quotes.post('/', async (c) => {
 
   const discountType = body.discount_type || 'amount'
   const discountValue = body.discount_value || 0
-  const taxRate = body.tax_rate !== undefined ? body.tax_rate : 0.05
+  const taxRate = body.tax_rate !== undefined ? body.tax_rate : COMPANY_INFO.defaultTaxRate
   const items = body.items.map((it: any) => ({ ...it }))
   const { subtotal, taxAmount, totalAmount } = calcTotals(items, discountType, discountValue, taxRate)
 
   const quoteNo = await generateQuoteNo(c.env.DB)
   const ownerId = body.owner_id && (user.role === 'admin' || user.role === 'manager') ? body.owner_id : user.sub
 
+  // 報價有效期限：若未指定，預設為今天起 30 天（對齊實際業務單據慣例）
+  let validUntil = body.valid_until || null
+  if (!validUntil) {
+    const d = new Date()
+    d.setDate(d.getDate() + COMPANY_INFO.quoteValidDays)
+    validUntil = d.toISOString().slice(0, 10)
+  }
+
   const result = await c.env.DB.prepare(
     `INSERT INTO quotes
       (quote_no, customer_id, contact_id, owner_id, status, title, currency, subtotal,
-       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes)
-     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes, site_address)
+     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       quoteNo,
@@ -123,16 +138,17 @@ quotes.post('/', async (c) => {
       body.contact_id || null,
       ownerId,
       body.title || null,
-      body.currency || 'TWD',
+      body.currency || COMPANY_INFO.defaultCurrency,
       subtotal,
       discountType,
       discountValue,
       taxRate,
       taxAmount,
       totalAmount,
-      body.valid_until || null,
+      validUntil,
       body.terms || null,
-      body.notes || null
+      body.notes || null,
+      body.site_address || null
     )
     .run()
 
@@ -248,7 +264,7 @@ quotes.put('/:id', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE quotes SET title=?, contact_id=?, currency=?, subtotal=?, discount_type=?, discount_value=?,
-       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?,
+       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, site_address=?,
        status = CASE WHEN status='rejected' THEN 'draft' ELSE status END,
        updated_at=CURRENT_TIMESTAMP
      WHERE id=?`
@@ -266,6 +282,7 @@ quotes.put('/:id', async (c) => {
       body.valid_until ?? existing.valid_until,
       body.terms ?? existing.terms,
       body.notes ?? existing.notes,
+      body.site_address ?? existing.site_address,
       id
     )
     .run()

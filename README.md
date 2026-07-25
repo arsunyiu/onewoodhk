@@ -9,7 +9,7 @@
 - **登入 / 認證**：JWT 登入機制（PBKDF2 密碼雜湊，Web Crypto API，Workers 原生相容）
 - **Dashboard 首頁**：客戶統計、Pipeline 漏斗圖(Chart.js)、本月成交金額、待審核報價提醒(主管視角)、待辦跟進清單
 - **客戶管理 API**：客戶 CRUD、聯絡人(多筆)、跟進紀錄(activities)，前端已完成**客戶列表頁**(搜尋/狀態篩選/分頁)
-- **報價管理 API**：報價 CRUD、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)與**報價建立/編輯頁**(動態明細項目編輯器、即時金額試算、儲存草稿/送出審核)
+- **報價管理 API**：報價 CRUD、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)、**報價建立/編輯頁**(動態明細項目編輯器、即時金額試算、儲存草稿/送出審核、工程地址欄位)與**報價詳情頁**(完整報價顯示、角色守衛的審批操作按鈕、狀態時間軸、前端jsPDF匯出PDF比照實際業務單據樣式)
 - **產品目錄 API**：產品/服務項目 CRUD（manager/admin 可編輯）
 - **訂單 API**：報價成交後自動產生訂單記錄
 - **使用者管理 API**：使用者列表、新增/編輯（admin only）
@@ -60,11 +60,19 @@
 | `quote_approval_logs` | 審批歷程稽核軌跡 |
 | `orders` | 報價成交後自動產生的訂單 |
 
-詳細欄位定義見 `migrations/0001_initial_schema.sql`
+`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`
+
+## 公司資訊／業務預設值（依實際報價單範本校正）
+系統預設值依「一木工程有限公司 ONE WOOD LIMITED」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端)：
+- **報價單號格式**：`Q-YYMMDDxxx`（如 `Q-260512001`），非之前誤植的 `Q20260701-0001` 格式
+- **預設幣別**：HKD（港幣）— 香港無銷售稅(VAT/GST)，故**預設稅率為 0**
+- **有效期限**：未指定時自動帶入建立日起 30 天
+- **工程地址**：`quotes.site_address` 記錄實際施工地點，與客戶登記地址(`customers.address`，可能為辦公室/帳單地址)分開管理
+- **收款銀行資訊**：華僑永享 OCBC，用於 PDF 匯出的「收款信息」區塊
+- **報價單法律聲明**：「此報價單經雙方簽署後具有合約效力」，PDF 頁尾統一顯示
 
 ## 尚未實作功能 ❌ (下一階段規劃)
 - 客戶新增/編輯表單頁、客戶詳情頁(含聯絡人/跟進紀錄/歷史報價 UI)
-- 報價詳情頁(審批按鈕操作、狀態時間軸、PDF匯出 - 建議用 jsPDF CDN 前端產生避免佔用 Workers CPU 時間)
 - 產品目錄管理頁、訂單列表頁、使用者管理頁(前端UI)
 - 報表分析頁(業績排行、轉換率、Pipeline趨勢圖)
 - Email 通知(報價寄送/審批結果) — 需使用者提供第三方服務(如 Resend) API Key
@@ -72,7 +80,7 @@
 
 ## 建議下一步開發順序
 1. ~~報價建立/編輯頁 + 明細項目編輯器~~ ✅ 已完成
-2. 報價詳情頁 + 審批操作 + PDF匯出（優先度最高，下一階段）
+2. ~~報價詳情頁 + 審批操作 + PDF匯出~~ ✅ 已完成
 3. 客戶詳情頁 + 表單
 4. 產品目錄、訂單列表 UI
 5. 報表分析頁
@@ -101,7 +109,8 @@
 /customers/:id          客戶詳情 (佔位頁，待開發)
 /quotes                 報價列表 ✅
 /quotes/new             新增報價 ✅（動態明細編輯器、即時試算）
-/quotes/:id             編輯報價 ✅（draft/rejected可編輯，其餘唯讀）；報價詳情頁(審批/PDF匯出)仍待開發
+/quotes/:id             報價詳情 ✅（完整顯示、審批操作按鈕、狀態時間軸、PDF匯出）
+/quotes/:id/edit        編輯報價 ✅（draft/rejected可編輯，重用建立頁表單）
 /products               產品目錄 (佔位頁，待開發)
 /orders                 成交訂單 (佔位頁，待開發)
 /users                  使用者管理 (佔位頁，待開發，admin only)
@@ -113,11 +122,14 @@
 ```
 webapp/
 ├── migrations/
-│   └── 0001_initial_schema.sql   # D1 資料庫 schema
-├── seed.sql                       # 測試資料 (含4個測試帳號、5個客戶、5筆報價)
+│   ├── 0001_initial_schema.sql   # D1 資料庫 schema
+│   └── 0002_add_site_address.sql # 新增 quotes.site_address(工程地址)欄位
+├── seed.sql                       # 測試資料（裝修/水電工程業務情境：4個測試帳號、5個客戶、5筆報價）
 ├── src/
-│   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell
-│   ├── types/index.ts             # 共用型別定義
+│   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell + jsPDF CDN
+│   ├── types/
+│   │   ├── index.ts               # 共用型別定義
+│   │   └── company.ts             # 公司資訊常數(名稱/地址/電話/銀行/稅率/幣別預設值)
 │   ├── middleware/auth.ts         # JWT 驗證 + 角色守衛 middleware
 │   ├── utils/
 │   │   ├── crypto.ts              # PBKDF2 密碼雜湊工具
@@ -138,6 +150,7 @@ webapp/
 │       │   ├── api.js              # Axios API client (自動帶JWT)
 │       │   ├── auth.js             # 登入狀態管理
 │       │   ├── utils.js            # 格式化工具、狀態標籤
+│       │   ├── companyInfo.js      # 公司資訊常數(前端，PDF匯出/詳情頁顯示用)
 │       │   ├── layout.js           # 側邊選單 + 頂部列
 │       │   └── main.js             # 前端路由(SPA-like)
 │       └── pages/
@@ -145,7 +158,8 @@ webapp/
 │           ├── dashboard.js        # Dashboard首頁
 │           ├── customers.js        # 客戶列表頁
 │           ├── quotes.js           # 報價列表頁
-│           ├── quoteForm.js        # 報價建立/編輯頁（明細編輯器）
+│           ├── quoteForm.js        # 報價建立/編輯頁（明細編輯器、工程地址欄位）
+│           ├── quoteDetail.js      # 報價詳情頁（顯示/審批操作/時間軸/PDF匯出）
 │           └── placeholders.js     # 其餘頁面佔位
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定

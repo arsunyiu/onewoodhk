@@ -11,6 +11,7 @@ const routes = [
   { pattern: /^\/customers\/(\d+)$/, page: (m) => Pages.customerDetail(m[1]) },
   { pattern: /^\/quotes$/, page: () => Pages.quoteList() },
   { pattern: /^\/quotes\/new$/, page: () => Pages.quoteForm(null) },
+  { pattern: /^\/quotes\/(\d+)\/edit$/, page: (m) => Pages.quoteForm(m[1]) },
   { pattern: /^\/quotes\/(\d+)$/, page: (m) => Pages.quoteDetail(m[1]) },
   { pattern: /^\/products$/, page: () => Pages.products() },
   { pattern: /^\/orders$/, page: () => Pages.orders() },

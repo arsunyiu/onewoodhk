@@ -38,6 +38,7 @@ function pageShell(title: string) {
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <link href="/static/styles.css" rel="stylesheet">
   <script>
     tailwind.config = {
@@ -56,12 +57,14 @@ function pageShell(title: string) {
   <script src="/static/js/api.js"></script>
   <script src="/static/js/auth.js"></script>
   <script src="/static/js/utils.js"></script>
+  <script src="/static/js/companyInfo.js"></script>
   <script src="/static/js/layout.js"></script>
   <script src="/static/pages/login.js"></script>
   <script src="/static/pages/dashboard.js"></script>
   <script src="/static/pages/customers.js"></script>
   <script src="/static/pages/quotes.js"></script>
   <script src="/static/pages/quoteForm.js"></script>
+  <script src="/static/pages/quoteDetail.js"></script>
   <script src="/static/pages/placeholders.js"></script>
   <script src="/static/js/main.js"></script>
 </body>
@@ -70,7 +73,7 @@ function pageShell(title: string) {
 
 // 所有前端頁面路由都回傳同一個 shell，由 main.js 依路徑渲染畫面
 const pageRoutes = ['/', '/login', '/customers', '/customers/new', '/customers/:id',
-  '/quotes', '/quotes/new', '/quotes/:id', '/products', '/orders', '/users', '/reports', '/settings/profile']
+  '/quotes', '/quotes/new', '/quotes/:id', '/quotes/:id/edit', '/products', '/orders', '/users', '/reports', '/settings/profile']
 
 for (const route of pageRoutes) {
   app.get(route, (c) => c.html(pageShell('一木工程')))

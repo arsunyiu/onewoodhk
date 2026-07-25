@@ -131,6 +131,11 @@ function renderQuoteForm(existing) {
             <input id="qf-title" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.title || '')}" placeholder="例：辦公室裝修工程報價"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50" />
           </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">工程地址 <span class="text-gray-400">(施工地點，如與客戶地址不同請填寫)</span></label>
+            <input id="qf-site-address" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.site_address || '')}" placeholder="例：南昌村,昌賢樓713室"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50" />
+          </div>
 
           ${canAssignOwner ? `
           <div>
@@ -205,9 +210,9 @@ function renderQuoteForm(existing) {
             </div>
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-500 w-20 shrink-0">稅率</label>
-              <input id="qf-tax-rate" ${disabled ? 'disabled' : ''} type="number" min="0" step="0.01" value="${q.tax_rate ?? 0.05}"
+              <input id="qf-tax-rate" ${disabled ? 'disabled' : ''} type="number" min="0" step="0.01" value="${q.tax_rate ?? 0}"
                 class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-right disabled:bg-gray-100" />
-              <span class="text-xs text-gray-400 shrink-0">如 0.05 = 5%</span>
+              <span class="text-xs text-gray-400 shrink-0">香港無銷售稅，預設為0</span>
             </div>
             <div class="border-t border-gray-200 pt-3 space-y-1 text-sm">
               <div class="flex justify-between text-gray-500"><span>未稅小計</span><span id="qf-subtotal">-</span></div>
@@ -390,7 +395,7 @@ function recalcQuoteTotals() {
   const discountType = document.getElementById('qf-discount-type')?.value || 'amount'
   const discountValue = Number(document.getElementById('qf-discount-value')?.value) || 0
   const taxRateRaw = Number(document.getElementById('qf-tax-rate')?.value)
-  const taxRate = isNaN(taxRateRaw) ? 0.05 : taxRateRaw
+  const taxRate = isNaN(taxRateRaw) ? 0 : taxRateRaw
   const currency = document.getElementById('qf-currency')?.value || 'HKD'
 
   const subtotal = QuoteFormState.items.reduce((sum, it) => sum + calcQuoteLineTotal(it), 0)
@@ -442,6 +447,7 @@ async function submitQuoteForm(submitAfter) {
     customer_id: Number(customerId),
     contact_id: document.getElementById('qf-contact').value ? Number(document.getElementById('qf-contact').value) : null,
     title: document.getElementById('qf-title').value.trim() || null,
+    site_address: document.getElementById('qf-site-address').value.trim() || null,
     currency: document.getElementById('qf-currency').value,
     valid_until: document.getElementById('qf-valid-until').value || null,
     discount_type: document.getElementById('qf-discount-type').value,
