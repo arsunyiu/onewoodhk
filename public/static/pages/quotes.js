@@ -134,7 +134,7 @@ function renderQuoteTable(list) {
           <p class="text-xs text-gray-400">${Fmt.escapeHtml(q.title || '')}</p>
         </td>
         <td class="px-4 py-3">${statusBadge(meta)}</td>
-        <td class="px-4 py-3 text-right font-medium text-gray-800">${Fmt.currency(q.total_amount)}</td>
+        <td class="px-4 py-3 text-right font-medium text-gray-800">${Fmt.currency(q.total_amount, q.currency)}</td>
         <td class="px-4 py-3 text-gray-500">${Fmt.escapeHtml(q.owner_name)}</td>
         <td class="px-4 py-3 text-gray-400">${Fmt.date(q.valid_until)}</td>
         <td class="px-4 py-3 text-gray-400">${Fmt.date(q.created_at)}</td>

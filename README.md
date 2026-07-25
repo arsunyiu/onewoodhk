@@ -9,7 +9,7 @@
 - **登入 / 認證**：JWT 登入機制（PBKDF2 密碼雜湊，Web Crypto API，Workers 原生相容）
 - **Dashboard 首頁**：客戶統計、Pipeline 漏斗圖(Chart.js)、本月成交金額、待審核報價提醒(主管視角)、待辦跟進清單
 - **客戶管理 API**：客戶 CRUD、聯絡人(多筆)、跟進紀錄(activities)，前端已完成**客戶列表頁**(搜尋/狀態篩選/分頁)
-- **報價管理 API**：報價 CRUD、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)
+- **報價管理 API**：報價 CRUD、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)與**報價建立/編輯頁**(動態明細項目編輯器、即時金額試算、儲存草稿/送出審核)
 - **產品目錄 API**：產品/服務項目 CRUD（manager/admin 可編輯）
 - **訂單 API**：報價成交後自動產生訂單記錄
 - **使用者管理 API**：使用者列表、新增/編輯（admin only）
@@ -64,7 +64,6 @@
 
 ## 尚未實作功能 ❌ (下一階段規劃)
 - 客戶新增/編輯表單頁、客戶詳情頁(含聯絡人/跟進紀錄/歷史報價 UI)
-- 報價建立/編輯頁(含動態明細項目編輯器、即時金額試算)
 - 報價詳情頁(審批按鈕操作、狀態時間軸、PDF匯出 - 建議用 jsPDF CDN 前端產生避免佔用 Workers CPU 時間)
 - 產品目錄管理頁、訂單列表頁、使用者管理頁(前端UI)
 - 報表分析頁(業績排行、轉換率、Pipeline趨勢圖)
@@ -72,8 +71,8 @@
 - 個人資料設定頁
 
 ## 建議下一步開發順序
-1. 報價建立/編輯頁 + 明細項目編輯器（核心業務流程，優先度最高）
-2. 報價詳情頁 + 審批操作 + PDF匯出
+1. ~~報價建立/編輯頁 + 明細項目編輯器~~ ✅ 已完成
+2. 報價詳情頁 + 審批操作 + PDF匯出（優先度最高，下一階段）
 3. 客戶詳情頁 + 表單
 4. 產品目錄、訂單列表 UI
 5. 報表分析頁
@@ -91,6 +90,7 @@
 - **儲存服務**：Cloudflare D1 (SQLite)，本地開發使用 `--local` 模式獨立 SQLite
 - **認證**：JWT (HS256)，`hono/jwt`，密碼使用 Web Crypto PBKDF2(SHA-256, 100000 rounds) 雜湊
 - **資料範圍隔離**：後端 middleware 依角色(admin/manager/sales)動態產生 SQL `owner_id IN (...)` 條件，非前端過濾
+- **幣別**：預設 HKD(港幣)，另支援 TWD/USD/CNY，報價單各自記錄獨立幣別
 
 ## 前端頁面樹
 ```
@@ -100,8 +100,8 @@
 /customers/new          新增客戶 (佔位頁，待開發)
 /customers/:id          客戶詳情 (佔位頁，待開發)
 /quotes                 報價列表 ✅
-/quotes/new             新增報價 (佔位頁，待開發)
-/quotes/:id             報價詳情 (佔位頁，待開發)
+/quotes/new             新增報價 ✅（動態明細編輯器、即時試算）
+/quotes/:id             編輯報價 ✅（draft/rejected可編輯，其餘唯讀）；報價詳情頁(審批/PDF匯出)仍待開發
 /products               產品目錄 (佔位頁，待開發)
 /orders                 成交訂單 (佔位頁，待開發)
 /users                  使用者管理 (佔位頁，待開發，admin only)
@@ -145,6 +145,7 @@ webapp/
 │           ├── dashboard.js        # Dashboard首頁
 │           ├── customers.js        # 客戶列表頁
 │           ├── quotes.js           # 報價列表頁
+│           ├── quoteForm.js        # 報價建立/編輯頁（明細編輯器）
 │           └── placeholders.js     # 其餘頁面佔位
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定

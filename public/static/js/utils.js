@@ -1,10 +1,13 @@
 // ============================================================
 // 共用格式化/顯示工具
 // ============================================================
+const CURRENCY_SYMBOL = { HKD: 'HK$', TWD: 'NT$', USD: 'US$', CNY: 'RMB¥' }
+
 const Fmt = {
-  currency(amount) {
+  currency(amount, currency) {
     const n = Number(amount || 0)
-    return 'NT$ ' + n.toLocaleString('zh-TW', { maximumFractionDigits: 0 })
+    const symbol = CURRENCY_SYMBOL[currency] || CURRENCY_SYMBOL.HKD
+    return symbol + ' ' + n.toLocaleString('zh-HK', { maximumFractionDigits: 0 })
   },
   date(d) {
     if (!d) return '-'

@@ -61,6 +61,7 @@ function pageShell(title: string) {
   <script src="/static/pages/dashboard.js"></script>
   <script src="/static/pages/customers.js"></script>
   <script src="/static/pages/quotes.js"></script>
+  <script src="/static/pages/quoteForm.js"></script>
   <script src="/static/pages/placeholders.js"></script>
   <script src="/static/js/main.js"></script>
 </body>
