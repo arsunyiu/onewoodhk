@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bizflow-crm",
+  "name": "yimu-crm",
   "compatibility_date": "2026-07-10",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -9,7 +9,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "bizflow-crm-production",
+      "database_name": "yimu-crm-production",
       "database_id": "REPLACE_WITH_PRODUCTION_DATABASE_ID"
     }
   ]

@@ -32,7 +32,7 @@ function pageShell(title: string) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - BizFlow CRM</title>
+  <title>${title} - 一木工程</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -72,7 +72,7 @@ const pageRoutes = ['/', '/login', '/customers', '/customers/new', '/customers/:
   '/quotes', '/quotes/new', '/quotes/:id', '/products', '/orders', '/users', '/reports', '/settings/profile']
 
 for (const route of pageRoutes) {
-  app.get(route, (c) => c.html(pageShell('BizFlow CRM')))
+  app.get(route, (c) => c.html(pageShell('一木工程')))
 }
 
 export default app

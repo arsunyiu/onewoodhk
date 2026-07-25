@@ -11,7 +11,7 @@ Pages.login = function () {
         <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mx-auto mb-4">
           <i class="fas fa-bolt text-white text-2xl"></i>
         </div>
-        <h1 class="text-2xl font-bold text-white">BizFlow CRM</h1>
+        <h1 class="text-2xl font-bold text-white">一木工程</h1>
         <p class="text-primary-100 text-sm mt-1">B2B 報價管理 · 客戶關係 · 銷售一體化平台</p>
       </div>
 
@@ -24,7 +24,7 @@ Pages.login = function () {
               <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400 text-sm"></i>
               <input type="email" id="login-email" required autocomplete="email"
                 class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="you@company.com" value="manager@bizflow.com" />
+                placeholder="you@company.com" value="manager@yimu.com.tw" />
             </div>
           </div>
           <div>
@@ -47,22 +47,22 @@ Pages.login = function () {
         <div class="mt-6 pt-5 border-t border-gray-100">
           <p class="text-xs text-gray-400 mb-2">測試帳號（密碼皆為 password123）：</p>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <button data-quick="admin@bizflow.com" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+            <button data-quick="admin@yimu.com.tw" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user-shield text-gray-400 mr-1"></i> 管理員
             </button>
-            <button data-quick="manager@bizflow.com" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+            <button data-quick="manager@yimu.com.tw" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user-tie text-gray-400 mr-1"></i> 主管
             </button>
-            <button data-quick="alice@bizflow.com" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+            <button data-quick="alice@yimu.com.tw" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - 王小美
             </button>
-            <button data-quick="bob@bizflow.com" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+            <button data-quick="bob@yimu.com.tw" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - 林大同
             </button>
           </div>
         </div>
       </div>
-      <p class="text-center text-primary-100 text-xs mt-6">© 2026 BizFlow CRM. All rights reserved.</p>
+      <p class="text-center text-primary-100 text-xs mt-6">© 2026 一木工程. All rights reserved.</p>
     </div>
   </div>`
 

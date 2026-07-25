@@ -1,20 +1,20 @@
 -- ============================================================
--- BizFlow CRM  |  Seed Data (測試資料)
+-- 一木工程  |  Seed Data (測試資料)
 -- 預設密碼皆為: password123
 -- password_hash 使用 PBKDF2(SHA-256, 100000 rounds) 格式: salt:hash (hex)
 -- 以下 hash 由 src/utils/crypto.ts 的 hashPassword('password123') 產生
 -- ============================================================
 
 -- Users -------------------------------------------------------
--- 1: admin@bizflow.com  (Admin)
--- 2: manager@bizflow.com (Manager，帶團隊)
--- 3: alice@bizflow.com  (Sales, manager_id=2)
--- 4: bob@bizflow.com    (Sales, manager_id=2)
+-- 1: admin@yimu.com.tw  (Admin)
+-- 2: manager@yimu.com.tw (Manager，帶團隊)
+-- 3: alice@yimu.com.tw  (Sales, manager_id=2)
+-- 4: bob@yimu.com.tw    (Sales, manager_id=2)
 INSERT OR IGNORE INTO users (id, name, email, password_hash, role, manager_id, phone, is_active) VALUES
-  (1, '系統管理員', 'admin@bizflow.com',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'admin',   NULL, '0900-000-001', 1),
-  (2, '陳經理',     'manager@bizflow.com', '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'manager', NULL, '0900-000-002', 1),
-  (3, '王小美',     'alice@bizflow.com',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-003', 1),
-  (4, '林大同',     'bob@bizflow.com',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-004', 1);
+  (1, '系統管理員', 'admin@yimu.com.tw',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'admin',   NULL, '0900-000-001', 1),
+  (2, '陳經理',     'manager@yimu.com.tw', '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'manager', NULL, '0900-000-002', 1),
+  (3, '王小美',     'alice@yimu.com.tw',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-003', 1),
+  (4, '林大同',     'bob@yimu.com.tw',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '0900-000-004', 1);
 
 -- Customers -----------------------------------------------------
 INSERT OR IGNORE INTO customers (id, company_name, tax_id, industry, status, source, address, city, website, credit_limit, owner_id) VALUES

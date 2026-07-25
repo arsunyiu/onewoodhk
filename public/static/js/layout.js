@@ -35,7 +35,7 @@ function renderLayout(activeKey) {
         <div class="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center">
           <i class="fas fa-bolt"></i>
         </div>
-        <span class="font-bold text-lg text-gray-800">BizFlow</span>
+        <span class="font-bold text-lg text-gray-800">一木工程</span>
       </div>
       <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">${menuHtml}</nav>
       <div class="p-3 border-t border-gray-100">

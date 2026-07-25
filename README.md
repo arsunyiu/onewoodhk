@@ -1,7 +1,7 @@
-# BizFlow CRM — B2B 報價管理 × CRM × 銷售管理一體化平台
+# 一木工程 — B2B 報價管理 × CRM × 銷售管理一體化平台
 
 ## Project Overview
-- **Name**: BizFlow CRM
+- **Name**: 一木工程
 - **Goal**: 為業務團隊提供三合一平台：客戶關係管理(CRM)、B2B 報價單建立與審批、銷售 Pipeline 追蹤，取代分散的 Excel/Email 作業流程。
 - **主要使用者**: 業務(Sales)、銷售主管(Manager)、系統管理員(Admin)
 
@@ -82,10 +82,10 @@
 ## 測試帳號 (本地開發，密碼皆為 `password123`)
 | Email | 角色 | 說明 |
 |---|---|---|
-| admin@bizflow.com | admin | 系統管理員，可見全部資料 |
-| manager@bizflow.com | manager | 陳經理，可見自己+團隊(alice, bob)資料 |
-| alice@bizflow.com | sales | 王小美，僅可見自己客戶/報價 |
-| bob@bizflow.com | sales | 林大同，僅可見自己客戶/報價 |
+| admin@yimu.com.tw | admin | 系統管理員，可見全部資料 |
+| manager@yimu.com.tw | manager | 陳經理，可見自己+團隊(alice, bob)資料 |
+| alice@yimu.com.tw | sales | 王小美，僅可見自己客戶/報價 |
+| bob@yimu.com.tw | sales | 林大同，僅可見自己客戶/報價 |
 
 ## 資料架構
 - **儲存服務**：Cloudflare D1 (SQLite)，本地開發使用 `--local` 模式獨立 SQLite
