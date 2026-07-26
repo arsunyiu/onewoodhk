@@ -64,7 +64,6 @@ INSERT OR IGNORE INTO products (id, sku, name, category, unit, unit_price, cost_
 -- 幣別統一為 HKD，香港無銷售稅（VAT/GST），稅率預設為 0
 -- 報價單號格式對齊實際業務單據： Q-YYMMDDxxx
 INSERT OR IGNORE INTO quotes (id, quote_no, customer_id, contact_id, owner_id, status, title, currency, subtotal, discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, site_address, approver_id, approved_at, sent_at, terms) VALUES
-  (1, 'Q-260512001', 1, 1, 3, 'won',             '南昌村昌賢樓713室 裝修水電維修工程', 'HKD', 75000, 'amount', 0, 0, 0, 75000, '2026-06-11', '南昌村,昌賢樓713室', 2, '2026-05-13 11:00:00', '2026-05-13 15:00:00', '此報價單經雙方簽署後具有合約效力。開工前支付訂金50%，完工驗收後支付餘款。'),
   (2, 'Q-260601001', 2, 2, 4, 'sent',            '匯景花園公用地方防水工程',           'HKD', 168000, 'percent', 5, 0, 0, 159600, '2026-07-01', '沙田匯景花園 公用天台及外牆', 2, '2026-06-05 15:00:00', '2026-06-06 10:00:00', '分兩期付款：開工30%，完工70%，保養期一年。'),
   (3, 'Q-260610001', 3, 4, 5, 'pending_approval', '富德工業大廈天台防水維修工程',        'HKD', 95000, 'amount', 0, 0, 0, 95000, '2026-07-10', '觀塘富德工業大廈 天台', NULL, NULL, NULL, '完工後保養兩年，包免費維修。'),
   (4, 'Q-260615001', 4, 5, 3, 'draft',            '太興地產新盤示範單位裝修工程',        'HKD', 320000, 'amount', 20000, 0, 0, 300000, '2026-07-15', '九龍灣宏光道 示範單位', NULL, NULL, NULL, NULL),
@@ -73,14 +72,7 @@ INSERT OR IGNORE INTO quotes (id, quote_no, customer_id, contact_id, owner_id, s
 UPDATE quotes SET rejected_reason = '法團表決未通過本期預算，建議下年度財政年度再議。' WHERE id = 5;
 
 -- Quote Items --------------------------------------------------------
--- Quote 1 明細完全依照實際報價單範本 (Quotation_南昌村,昌賢樓713室0715.pdf)
 INSERT OR IGNORE INTO quote_items (id, quote_id, product_id, item_name, description, unit, quantity, unit_price, discount_pct, line_total, sort_order) VALUES
-  (1, 1, 1, '工程保險',       '工程期間第三者責任保險、安全措施、基本保護工程，包括單位內及公眾地方保護', '項', 1, 3000,  0, 3000,  0),
-  (2, 1, 2, '喉管生鏽滴水',   '更換單位內老化及生鏽來水/去水喉管，處理滴水及滲漏位置，包相關配件及修補受影響飾面', '項', 1, 15000, 0, 15000, 1),
-  (3, 1, 3, '窗邊滲漏',       '處理窗邊滲水，包括清除老化玻璃膠及防水膠，重造窗框邊防水收口，修補窗邊批盪及防水層', '項', 1, 16000, 0, 16000, 2),
-  (4, 1, 4, '窗鉸老化',       '更換老化窗鉸、窗鎖、拉釘及相關五金配件，確保窗戶安全及正常開關', '項', 1, 12000, 0, 12000, 3),
-  (5, 1, 5, '去水喉爆裂滲水工程', '更換破裂去水喉及相關隔氣、接駁配件，進行防漏測試，修補因工程引致之牆身/地台飾面', '項', 1, 24000, 0, 24000, 4),
-  (6, 1, 6, '泥頭移除',       '工程廢料、泥頭清理及運走，完工後基本清潔', '項', 1, 5000,  0, 5000,  5),
   (7, 2, 3, '天台防水工程',   '公用天台重做防水層及批盪', '項', 1, 120000, 0, 120000, 0),
   (8, 2, 6, '外牆清潔及修補', '外牆滲水位置修補及基本清潔', '項', 1, 48000, 0, 48000, 1),
   (9, 3, 3, '天台防水翻新工程', '拆除舊防水層，重做天台防水及排水系統', '項', 1, 95000, 0, 95000, 0),
@@ -90,10 +82,6 @@ INSERT OR IGNORE INTO quote_items (id, quote_id, product_id, item_name, descript
 
 -- Approval Logs --------------------------------------------------------
 INSERT OR IGNORE INTO quote_approval_logs (id, quote_id, user_id, action, comment, created_at) VALUES
-  (1, 1, 3, 'submit', '提交審核', '2026-05-12 09:00:00'),
-  (2, 1, 2, 'approve', '報價合理，核准', '2026-05-13 11:00:00'),
-  (3, 1, 3, 'send', '已寄送業主', '2026-05-13 15:00:00'),
-  (4, 1, 3, 'win', '業主已簽署確認開工', '2026-05-20 14:00:00'),
   (5, 2, 4, 'submit', '提交審核', '2026-06-03 10:00:00'),
   (6, 2, 2, 'approve', '折扣範圍合理，核准', '2026-06-05 15:00:00'),
   (7, 2, 4, 'send', '已於法團會議上提交', '2026-06-06 10:00:00'),
@@ -102,5 +90,4 @@ INSERT OR IGNORE INTO quote_approval_logs (id, quote_id, user_id, action, commen
   (10, 5, 2, 'reject', '法團表決未通過本期預算，建議下年度財政年度再議。', '2026-05-28 10:00:00');
 
 -- Orders --------------------------------------------------------
-INSERT OR IGNORE INTO orders (id, order_no, quote_id, customer_id, owner_id, total_amount, status, order_date, notes) VALUES
-  (1, 'O-260520001', 1, 1, 3, 75000, 'confirmed', '2026-05-20', '業主已簽署確認開工，訂金50%已收。');
+-- (無測試訂單：南昌村報價單已成交紀錄已移除)
