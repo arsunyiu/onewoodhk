@@ -9,23 +9,25 @@
 -- Users -------------------------------------------------------
 -- 1: admin@onewood.com.hk  (Admin)
 -- 2: manager@onewood.com.hk (Manager，帶團隊)
--- 3: alice@onewood.com.hk  (Sales, manager_id=2)
--- 4: bob@onewood.com.hk    (Sales, manager_id=2)
+-- 3: kenny@onewood.com.hk  (Sales, manager_id=2) - Kenny Yip
+-- 4: wah@onewood.com.hk    (Sales, manager_id=2) - Wah Tong
+-- 5: joy@onewood.com.hk    (Sales, manager_id=2) - Joy Ng
 -- 電話統一改為香港格式（8位數字，市話 2/3 開頭、手機 5/6/9 開頭）
 INSERT OR IGNORE INTO users (id, name, email, password_hash, role, manager_id, phone, is_active) VALUES
   (1, '系統管理員', 'admin@onewood.com.hk',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'admin',   NULL, '3123 4560', 1),
   (2, '陳經理',     'manager@onewood.com.hk', '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'manager', NULL, '6466 6293', 1),
-  (3, '王小美',     'alice@onewood.com.hk',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '9123 4561', 1),
-  (4, '林大同',     'bob@onewood.com.hk',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '9123 4562', 1);
+  (3, 'Kenny Yip',  'kenny@onewood.com.hk',   '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '9123 4561', 1),
+  (4, 'Wah Tong',   'wah@onewood.com.hk',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '9123 4562', 1),
+  (5, 'Joy Ng',     'joy@onewood.com.hk',     '95438473e7c6f06872d6a1b7fa45905f:f0391f16cc8cb0735d1e5b86763f10f7d0ab39895c1318434ac64f4045026da1', 'sales',   2,    '9123 4563', 1);
 
 -- Customers -----------------------------------------------------
 -- 裝修/水電工程業務常見客戶類型：私人業主、業主立案法團、工廈/物業管理公司、地產發展商
 INSERT OR IGNORE INTO customers (id, company_name, tax_id, industry, status, source, address, city, website, credit_limit, owner_id) VALUES
   (1, '陳大文（南昌村業主）',         NULL,       '私人住宅',   'active',   '街坊轉介',   '南昌村,昌賢樓713室',                     '香港', NULL, 100000, 3),
-  (2, '匯景花園業主立案法團',         '61234567', '物業管理',   'active',   '官網詢問',   '沙田匯景花園',                           '香港', NULL, 500000, 3),
-  (3, '富德工業大廈管理處',           '62345678', '工廈/物業', 'lead',     '陌生開發',   '觀塘富德工業大廈',                       '香港', NULL, 300000, 4),
-  (4, '太興地產發展有限公司',         '63456789', '地產發展',   'lead',     '轉介',       '九龍灣宏光道',                           '香港', NULL, 800000, 4),
-  (5, '樂居物業管理有限公司',         '64567890', '物業管理',   'inactive', '陌生開發',   '荃灣海濱花園',                           '香港', NULL, 200000, 3);
+  (2, '匯景花園業主立案法團',         '61234567', '物業管理',   'active',   '官網詢問',   '沙田匯景花園',                           '香港', NULL, 500000, 4),
+  (3, '富德工業大廈管理處',           '62345678', '工廈/物業', 'lead',     '陌生開發',   '觀塘富德工業大廈',                       '香港', NULL, 300000, 5),
+  (4, '太興地產發展有限公司',         '63456789', '地產發展',   'lead',     '轉介',       '九龍灣宏光道',                           '香港', NULL, 800000, 3),
+  (5, '樂居物業管理有限公司',         '64567890', '物業管理',   'inactive', '陌生開發',   '荃灣海濱花園',                           '香港', NULL, 200000, 4);
 
 -- Contacts --------------------------------------------------------
 INSERT OR IGNORE INTO contacts (id, customer_id, name, title, phone, mobile, email, is_primary) VALUES
@@ -40,9 +42,9 @@ INSERT OR IGNORE INTO contacts (id, customer_id, name, title, phone, mobile, ema
 INSERT OR IGNORE INTO activities (id, customer_id, user_id, type, subject, content, activity_date) VALUES
   (1, 1, 3, 'meeting', '現場勘察', '到南昌村昌賢樓713室現場勘察漏水及喉管狀況，確認施工範圍。', '2026-07-01 10:00:00'),
   (2, 1, 3, 'call', '報價後追蹤電話', '業主已確認報價內容，同意開工日期。', '2026-07-13 14:30:00'),
-  (3, 2, 3, 'meeting', '法團會議簡報', '出席業主立案法團會議，簡報公用地方防水工程方案。', '2026-06-28 19:00:00'),
-  (4, 3, 4, 'email', '寄送工程建議書', '已寄送工廈天台防水維修建議書供物業處內部評估。', '2026-07-05 09:15:00'),
-  (5, 4, 4, 'task', '待辦：安排報價會議', '需在下週與地產發展商工程部安排報價會議。', '2026-07-28 09:00:00');
+  (3, 2, 4, 'meeting', '法團會議簡報', '出席業主立案法團會議，簡報公用地方防水工程方案。', '2026-06-28 19:00:00'),
+  (4, 3, 5, 'email', '寄送工程建議書', '已寄送工廈天台防水維修建議書供物業處內部評估。', '2026-07-05 09:15:00'),
+  (5, 4, 3, 'task', '待辦：安排報價會議', '需在下週與地產發展商工程部安排報價會議。', '2026-07-28 09:00:00');
 
 UPDATE activities SET is_done = 0 WHERE id = 5;
 
@@ -63,10 +65,10 @@ INSERT OR IGNORE INTO products (id, sku, name, category, unit, unit_price, cost_
 -- 報價單號格式對齊實際業務單據： Q-YYMMDDxxx
 INSERT OR IGNORE INTO quotes (id, quote_no, customer_id, contact_id, owner_id, status, title, currency, subtotal, discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, site_address, approver_id, approved_at, sent_at, terms) VALUES
   (1, 'Q-260512001', 1, 1, 3, 'won',             '南昌村昌賢樓713室 裝修水電維修工程', 'HKD', 75000, 'amount', 0, 0, 0, 75000, '2026-06-11', '南昌村,昌賢樓713室', 2, '2026-05-13 11:00:00', '2026-05-13 15:00:00', '此報價單經雙方簽署後具有合約效力。開工前支付訂金50%，完工驗收後支付餘款。'),
-  (2, 'Q-260601001', 2, 2, 3, 'sent',            '匯景花園公用地方防水工程',           'HKD', 168000, 'percent', 5, 0, 0, 159600, '2026-07-01', '沙田匯景花園 公用天台及外牆', 2, '2026-06-05 15:00:00', '2026-06-06 10:00:00', '分兩期付款：開工30%，完工70%，保養期一年。'),
-  (3, 'Q-260610001', 3, 4, 4, 'pending_approval', '富德工業大廈天台防水維修工程',        'HKD', 95000, 'amount', 0, 0, 0, 95000, '2026-07-10', '觀塘富德工業大廈 天台', NULL, NULL, NULL, '完工後保養兩年，包免費維修。'),
-  (4, 'Q-260615001', 4, 5, 4, 'draft',            '太興地產新盤示範單位裝修工程',        'HKD', 320000, 'amount', 20000, 0, 0, 300000, '2026-07-15', '九龍灣宏光道 示範單位', NULL, NULL, NULL, NULL),
-  (5, 'Q-260528001', 5, 6, 3, 'rejected',         '海濱花園樓梯扶手更換工程',           'HKD', 42000, 'amount', 0, 0, 0, 42000, '2026-06-27', '荃灣海濱花園', 2, NULL, NULL, NULL);
+  (2, 'Q-260601001', 2, 2, 4, 'sent',            '匯景花園公用地方防水工程',           'HKD', 168000, 'percent', 5, 0, 0, 159600, '2026-07-01', '沙田匯景花園 公用天台及外牆', 2, '2026-06-05 15:00:00', '2026-06-06 10:00:00', '分兩期付款：開工30%，完工70%，保養期一年。'),
+  (3, 'Q-260610001', 3, 4, 5, 'pending_approval', '富德工業大廈天台防水維修工程',        'HKD', 95000, 'amount', 0, 0, 0, 95000, '2026-07-10', '觀塘富德工業大廈 天台', NULL, NULL, NULL, '完工後保養兩年，包免費維修。'),
+  (4, 'Q-260615001', 4, 5, 3, 'draft',            '太興地產新盤示範單位裝修工程',        'HKD', 320000, 'amount', 20000, 0, 0, 300000, '2026-07-15', '九龍灣宏光道 示範單位', NULL, NULL, NULL, NULL),
+  (5, 'Q-260528001', 5, 6, 4, 'rejected',         '海濱花園樓梯扶手更換工程',           'HKD', 42000, 'amount', 0, 0, 0, 42000, '2026-06-27', '荃灣海濱花園', 2, NULL, NULL, NULL);
 
 UPDATE quotes SET rejected_reason = '法團表決未通過本期預算，建議下年度財政年度再議。' WHERE id = 5;
 
@@ -92,11 +94,11 @@ INSERT OR IGNORE INTO quote_approval_logs (id, quote_id, user_id, action, commen
   (2, 1, 2, 'approve', '報價合理，核准', '2026-05-13 11:00:00'),
   (3, 1, 3, 'send', '已寄送業主', '2026-05-13 15:00:00'),
   (4, 1, 3, 'win', '業主已簽署確認開工', '2026-05-20 14:00:00'),
-  (5, 2, 3, 'submit', '提交審核', '2026-06-03 10:00:00'),
+  (5, 2, 4, 'submit', '提交審核', '2026-06-03 10:00:00'),
   (6, 2, 2, 'approve', '折扣範圍合理，核准', '2026-06-05 15:00:00'),
-  (7, 2, 3, 'send', '已於法團會議上提交', '2026-06-06 10:00:00'),
-  (8, 3, 4, 'submit', '提交審核，等待主管確認', '2026-07-08 09:00:00'),
-  (9, 5, 3, 'submit', '提交審核', '2026-05-25 10:00:00'),
+  (7, 2, 4, 'send', '已於法團會議上提交', '2026-06-06 10:00:00'),
+  (8, 3, 5, 'submit', '提交審核，等待主管確認', '2026-07-08 09:00:00'),
+  (9, 5, 4, 'submit', '提交審核', '2026-05-25 10:00:00'),
   (10, 5, 2, 'reject', '法團表決未通過本期預算，建議下年度財政年度再議。', '2026-05-28 10:00:00');
 
 -- Orders --------------------------------------------------------

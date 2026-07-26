@@ -54,11 +54,14 @@ Pages.login = function () {
             <button data-quick="manager@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user-tie text-gray-400 mr-1"></i> 主管
             </button>
-            <button data-quick="alice@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - 王小美
+            <button data-quick="kenny@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Kenny Yip
             </button>
-            <button data-quick="bob@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - 林大同
+            <button data-quick="wah@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Wah Tong
+            </button>
+            <button data-quick="joy@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
+              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Joy Ng
             </button>
           </div>
         </div>

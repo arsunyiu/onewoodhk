@@ -91,9 +91,10 @@
 | Email | 角色 | 說明 |
 |---|---|---|
 | admin@onewood.com.hk | admin | 系統管理員，可見全部資料 |
-| manager@onewood.com.hk | manager | 陳經理，可見自己+團隊(alice, bob)資料 |
-| alice@onewood.com.hk | sales | 王小美，僅可見自己客戶/報價 |
-| bob@onewood.com.hk | sales | 林大同，僅可見自己客戶/報價 |
+| manager@onewood.com.hk | manager | 陳經理，可見自己+團隊(Kenny Yip, Wah Tong, Joy Ng)資料 |
+| kenny@onewood.com.hk | sales | Kenny Yip，僅可見自己客戶/報價 |
+| wah@onewood.com.hk | sales | Wah Tong，僅可見自己客戶/報價 |
+| joy@onewood.com.hk | sales | Joy Ng，僅可見自己客戶/報價 |
 
 ## 資料架構
 - **儲存服務**：Cloudflare D1 (SQLite)，本地開發使用 `--local` 模式獨立 SQLite
@@ -126,7 +127,7 @@ webapp/
 ├── migrations/
 │   ├── 0001_initial_schema.sql   # D1 資料庫 schema
 │   └── 0002_add_site_address.sql # 新增 quotes.site_address(工程地址)欄位
-├── seed.sql                       # 測試資料（裝修/水電工程業務情境：4個測試帳號、5個客戶、5筆報價）
+├── seed.sql                       # 測試資料（裝修/水電工程業務情境：5個測試帳號、5個客戶、5筆報價）
 ├── src/
 │   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell + jsPDF CDN
 │   ├── types/
