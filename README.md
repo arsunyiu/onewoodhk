@@ -127,7 +127,7 @@ webapp/
 ├── migrations/
 │   ├── 0001_initial_schema.sql   # D1 資料庫 schema
 │   └── 0002_add_site_address.sql # 新增 quotes.site_address(工程地址)欄位
-├── seed.sql                       # 測試資料（裝修/水電工程業務情境：5個測試帳號、5個客戶、5筆報價）
+├── seed.sql                       # 測試資料（裝修/水電工程業務情境：5個測試帳號、5個客戶、4筆報價）
 ├── src/
 │   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell + jsPDF CDN
 │   ├── types/
