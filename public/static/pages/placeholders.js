@@ -1,6 +1,6 @@
 // ============================================================
 // 佔位頁面（後續迭代將擴充完整功能）
-// 本次交付重點頁面：login / dashboard / customerList / quoteList
+// 尚未開發：報表分析 / 個人資料設定
 // ============================================================
 window.Pages = window.Pages || {}
 
@@ -15,26 +15,6 @@ function comingSoon(activeKey, title, desc) {
       <p class="text-sm text-gray-400 max-w-sm">${desc}</p>
       <a href="/" class="mt-6 text-primary-600 text-sm hover:underline">回首頁總覽</a>
     </div>`)
-}
-
-Pages.customerForm = function (id) {
-  comingSoon('customers', id ? '編輯客戶' : '新增客戶', '客戶新增/編輯表單將於下一階段開發完成，敬請期待。')
-}
-
-Pages.customerDetail = function (id) {
-  comingSoon('customers', `客戶詳情 #${id}`, '客戶詳情頁（含聯絡人、跟進紀錄、歷史報價）將於下一階段開發完成。')
-}
-
-Pages.products = function () {
-  comingSoon('products', '產品目錄', '產品/服務項目管理頁面將於下一階段開發完成。')
-}
-
-Pages.orders = function () {
-  comingSoon('orders', '成交訂單', '訂單列表頁面將於下一階段開發完成。')
-}
-
-Pages.users = function () {
-  comingSoon('users', '使用者管理', '使用者管理頁面（僅管理員可用）將於下一階段開發完成。')
 }
 
 Pages.reports = function () {

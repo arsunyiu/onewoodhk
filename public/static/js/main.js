@@ -8,6 +8,7 @@ const routes = [
   { pattern: /^\/$/, page: () => Pages.dashboard() },
   { pattern: /^\/customers$/, page: () => Pages.customerList() },
   { pattern: /^\/customers\/new$/, page: () => Pages.customerForm(null) },
+  { pattern: /^\/customers\/(\d+)\/edit$/, page: (m) => Pages.customerForm(m[1]) },
   { pattern: /^\/customers\/(\d+)$/, page: (m) => Pages.customerDetail(m[1]) },
   { pattern: /^\/quotes$/, page: () => Pages.quoteList() },
   { pattern: /^\/quotes\/new$/, page: () => Pages.quoteForm(null) },

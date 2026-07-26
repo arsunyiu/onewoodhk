@@ -8,11 +8,12 @@
 ## 目前已完成功能 ✅
 - **登入 / 認證**：JWT 登入機制（PBKDF2 密碼雜湊，Web Crypto API，Workers 原生相容）
 - **Dashboard 首頁**：客戶統計、Pipeline 漏斗圖(Chart.js)、本月成交金額、待審核報價提醒(主管視角)、待辦跟進清單
-- **客戶管理 API**：客戶 CRUD、聯絡人(多筆)、跟進紀錄(activities)，前端已完成**客戶列表頁**(搜尋/狀態篩選/分頁)
-- **報價管理 API**：報價 CRUD、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)、**報價建立/編輯頁**(動態明細項目編輯器、即時金額試算、儲存草稿/送出審核、工程地址欄位)與**報價詳情頁**(完整報價顯示、角色守衛的審批操作按鈕、狀態時間軸、前端jsPDF匯出PDF比照實際業務單據樣式)
-- **產品目錄 API**：產品/服務項目 CRUD（manager/admin 可編輯）
-- **訂單 API**：報價成交後自動產生訂單記錄
-- **使用者管理 API**：使用者列表、新增/編輯（admin only）
+- **客戶管理**：客戶 CRUD API + 聯絡人(多筆)/跟進紀錄(activities) API，前端已完成**客戶列表頁**(搜尋/狀態篩選/分頁)、**客戶詳情頁**(基本資料/聯絡人清單/跟進紀錄時間軸/歷史報價，可於頁面內新增聯絡人與跟進紀錄)、**客戶新增/編輯表單頁**
+- **報價管理**：報價 CRUD API、明細項目(quote_items)、完整工作流程(送審/核准/拒絕/寄送/成交轉訂單/流失)、審批稽核軌跡，前端已完成**報價列表頁**(狀態Tab篩選/搜尋/分頁)、**報價建立/編輯頁**(動態明細項目編輯器、即時金額試算、儲存草稿/送出審核、工程地址欄位)與**報價詳情頁**(完整報價顯示、角色守衛的審批操作按鈕、狀態時間軸、前端jsPDF匯出PDF比照實際業務單據樣式)
+- **產品目錄**：產品/服務項目 CRUD API（manager/admin 可編輯，軟刪除下架），前端已完成**產品目錄頁**(搜尋/分類篩選/上架狀態篩選、manager+權限的新增/編輯Modal與下架操作，sales角色僅可檢視)
+- **成交訂單**：報價成交後自動產生訂單記錄，前端已完成**訂單列表頁**(唯讀，分頁顯示，可點擊追溯來源報價單)
+- **使用者管理**：使用者列表 API、新增/編輯 API（admin only），前端已完成**使用者管理頁**(admin only，含新增使用者、編輯角色/主管歸屬/電話/啟用狀態/重設密碼，非admin直接訪問會顯示權限不足提示)
+- **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者的新增編輯表單共用
 - **角色權限與資料範圍控制**：
   - `admin`：可見全公司所有資料
   - `manager`：可見自己 + 團隊(manager_id指向自己)成員的資料
@@ -72,19 +73,19 @@
 - **報價單法律聲明**：「此報價單經雙方簽署後具有合約效力」，PDF 頁尾統一顯示
 
 ## 尚未實作功能 ❌ (下一階段規劃)
-- 客戶新增/編輯表單頁、客戶詳情頁(含聯絡人/跟進紀錄/歷史報價 UI)
-- 產品目錄管理頁、訂單列表頁、使用者管理頁(前端UI)
 - 報表分析頁(業績排行、轉換率、Pipeline趨勢圖)
 - Email 通知(報價寄送/審批結果) — 需使用者提供第三方服務(如 Resend) API Key
 - 個人資料設定頁
+- 聯絡人/跟進紀錄的編輯與刪除（後端目前僅提供 GET+POST，尚無 PUT/DELETE，如需此功能須先擴充 `customers.ts`）
 
 ## 建議下一步開發順序
 1. ~~報價建立/編輯頁 + 明細項目編輯器~~ ✅ 已完成
 2. ~~報價詳情頁 + 審批操作 + PDF匯出~~ ✅ 已完成
-3. 客戶詳情頁 + 表單
-4. 產品目錄、訂單列表 UI
-5. 報表分析頁
-6. 使用者管理 UI (admin)
+3. ~~客戶詳情頁 + 表單~~ ✅ 已完成
+4. ~~產品目錄、訂單列表 UI~~ ✅ 已完成
+5. ~~使用者管理 UI (admin)~~ ✅ 已完成
+6. 報表分析頁
+7. 個人資料設定頁 / Email 通知
 
 ## 測試帳號 (本地開發，密碼皆為 `password123`)
 | Email | 角色 | 說明 |
@@ -105,15 +106,16 @@
 /login                  登入頁 ✅
 /                       Dashboard 首頁 ✅
 /customers              客戶列表 ✅
-/customers/new          新增客戶 (佔位頁，待開發)
-/customers/:id          客戶詳情 (佔位頁，待開發)
+/customers/new          新增客戶 ✅
+/customers/:id          客戶詳情 ✅（基本資料/聯絡人/跟進紀錄時間軸/歷史報價，可新增聯絡人與跟進紀錄）
+/customers/:id/edit      編輯客戶 ✅（重用建立頁表單，僅owner/manager+可編輯）
 /quotes                 報價列表 ✅
 /quotes/new             新增報價 ✅（動態明細編輯器、即時試算）
 /quotes/:id             報價詳情 ✅（完整顯示、審批操作按鈕、狀態時間軸、PDF匯出）
 /quotes/:id/edit        編輯報價 ✅（draft/rejected可編輯，重用建立頁表單）
-/products               產品目錄 (佔位頁，待開發)
-/orders                 成交訂單 (佔位頁，待開發)
-/users                  使用者管理 (佔位頁，待開發，admin only)
+/products               產品目錄 ✅（搜尋/分類/上架狀態篩選，manager+可新增/編輯/下架）
+/orders                 成交訂單 ✅（唯讀列表，可點擊追溯來源報價）
+/users                  使用者管理 ✅（admin only，含新增/編輯，非admin訪問顯示權限不足）
 /reports                報表分析 (佔位頁，待開發)
 /settings/profile        個人資料 (佔位頁，待開發)
 ```
@@ -151,16 +153,21 @@ webapp/
 │       │   ├── auth.js             # 登入狀態管理
 │       │   ├── utils.js            # 格式化工具、狀態標籤
 │       │   ├── companyInfo.js      # 公司資訊常數(前端，PDF匯出/詳情頁顯示用)
-│       │   ├── layout.js           # 側邊選單 + 頂部列
+│       │   ├── layout.js           # 側邊選單 + 頂部列 + 共用Modal(openModal/closeModal)
 │       │   └── main.js             # 前端路由(SPA-like)
 │       └── pages/
 │           ├── login.js            # 登入頁
 │           ├── dashboard.js        # Dashboard首頁
 │           ├── customers.js        # 客戶列表頁
+│           ├── customerDetail.js   # 客戶詳情頁（聯絡人/跟進紀錄時間軸/歷史報價）
+│           ├── customerForm.js     # 客戶新增/編輯表單頁
 │           ├── quotes.js           # 報價列表頁
 │           ├── quoteForm.js        # 報價建立/編輯頁（明細編輯器、工程地址欄位）
 │           ├── quoteDetail.js      # 報價詳情頁（顯示/審批操作/時間軸/PDF匯出）
-│           └── placeholders.js     # 其餘頁面佔位
+│           ├── products.js         # 產品目錄頁（manager+可新增/編輯/下架）
+│           ├── orders.js           # 訂單列表頁（唯讀）
+│           ├── users.js            # 使用者管理頁（admin only）
+│           └── placeholders.js     # 其餘頁面佔位（報表分析/個人資料）
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定
 └── package.json
@@ -177,4 +184,4 @@ curl http://localhost:3000
 - **Platform**: Cloudflare Pages + D1
 - **Status**: 🔧 開發中（尚未正式部署）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-07-25
+- **Last Updated**: 2026-07-26

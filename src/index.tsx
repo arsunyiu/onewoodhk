@@ -62,9 +62,14 @@ function pageShell(title: string) {
   <script src="/static/pages/login.js"></script>
   <script src="/static/pages/dashboard.js"></script>
   <script src="/static/pages/customers.js"></script>
+  <script src="/static/pages/customerDetail.js"></script>
+  <script src="/static/pages/customerForm.js"></script>
   <script src="/static/pages/quotes.js"></script>
   <script src="/static/pages/quoteForm.js"></script>
   <script src="/static/pages/quoteDetail.js"></script>
+  <script src="/static/pages/products.js"></script>
+  <script src="/static/pages/orders.js"></script>
+  <script src="/static/pages/users.js"></script>
   <script src="/static/pages/placeholders.js"></script>
   <script src="/static/js/main.js"></script>
 </body>
@@ -72,7 +77,7 @@ function pageShell(title: string) {
 }
 
 // 所有前端頁面路由都回傳同一個 shell，由 main.js 依路徑渲染畫面
-const pageRoutes = ['/', '/login', '/customers', '/customers/new', '/customers/:id',
+const pageRoutes = ['/', '/login', '/customers', '/customers/new', '/customers/:id', '/customers/:id/edit',
   '/quotes', '/quotes/new', '/quotes/:id', '/quotes/:id/edit', '/products', '/orders', '/users', '/reports', '/settings/profile']
 
 for (const route of pageRoutes) {

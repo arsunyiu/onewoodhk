@@ -77,3 +77,23 @@ function showToast(message, type = 'success') {
   document.body.appendChild(el)
   setTimeout(() => el.remove(), 3000)
 }
+
+// ============================================================
+// 共用 Modal：供各頁面新增/編輯表單（聯絡人、跟進紀錄、產品、使用者）使用
+// ============================================================
+function openModal(innerHtml, opts = {}) {
+  closeModal()
+  const overlay = document.createElement('div')
+  overlay.id = 'app-modal-overlay'
+  overlay.className = 'fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4'
+  overlay.innerHTML = `<div id="app-modal-box" class="bg-white rounded-xl shadow-xl w-full ${opts.maxWidth || 'max-w-lg'} max-h-[90vh] overflow-y-auto">${innerHtml}</div>`
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay && !opts.persistent) closeModal()
+  })
+  document.body.appendChild(overlay)
+}
+
+function closeModal() {
+  const el = document.getElementById('app-modal-overlay')
+  if (el) el.remove()
+}
