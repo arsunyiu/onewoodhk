@@ -13,6 +13,7 @@
 - **產品目錄**：產品/服務項目 CRUD API（manager/admin 可編輯，軟刪除下架），前端已完成**產品目錄頁**(搜尋/分類篩選/上架狀態篩選、manager+權限的新增/編輯Modal與下架操作，sales角色僅可檢視)
 - **成交訂單**：報價成交後自動產生訂單記錄，前端已完成**訂單列表頁**(唯讀，分頁顯示，可點擊追溯來源報價單)
 - **使用者管理**：使用者列表 API、新增/編輯 API（admin only），前端已完成**使用者管理頁**(admin only，含新增使用者、編輯角色/主管歸屬/電話/啟用狀態/重設密碼，非admin直接訪問會顯示權限不足提示)
+- **報表分析**：新增 `GET /api/reports/summary?range=` 統計 API(依角色資料範圍過濾)，前端已完成**報表分析頁**：期間篩選(近30/90/180/365天/全部)、KPI總覽卡(期間報價數/成交金額/成交轉換率/平均成交金額)、近6個月報價建立量vs成交金額趨勢圖(Chart.js雙軸長條+線圖)、Pipeline即時狀態分布甜甜圈圖、業務業績排行表(依成交金額排序，含排名徽章與進度條)、客戶貢獻排行Top10(依累計成交金額，可點擊追溯客戶詳情)
 - **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者的新增編輯表單共用
 - **角色權限與資料範圍控制**：
   - `admin`：可見全公司所有資料
@@ -45,6 +46,7 @@
 | GET | /api/orders | 訂單列表 | 需登入(依角色範圍) |
 | GET | /api/users | 使用者列表 | 需登入 |
 | POST/PUT | /api/users | 新增/編輯使用者 | admin |
+| GET | /api/reports/summary | 報表統計摘要 `?range=30d\|90d\|180d\|365d\|all`（KPI/Pipeline快照/6個月趨勢/業務排行/客戶排行) | 需登入(依角色範圍) |
 
 統一回應格式：`{ success: true, data, pagination? }` 或 `{ success: false, error }`
 
@@ -73,7 +75,6 @@
 - **報價單法律聲明**：「此報價單經雙方簽署後具有合約效力」，PDF 頁尾統一顯示
 
 ## 尚未實作功能 ❌ (下一階段規劃)
-- 報表分析頁(業績排行、轉換率、Pipeline趨勢圖)
 - Email 通知(報價寄送/審批結果) — 需使用者提供第三方服務(如 Resend) API Key
 - 個人資料設定頁
 - 聯絡人/跟進紀錄的編輯與刪除（後端目前僅提供 GET+POST，尚無 PUT/DELETE，如需此功能須先擴充 `customers.ts`）
@@ -84,7 +85,7 @@
 3. ~~客戶詳情頁 + 表單~~ ✅ 已完成
 4. ~~產品目錄、訂單列表 UI~~ ✅ 已完成
 5. ~~使用者管理 UI (admin)~~ ✅ 已完成
-6. 報表分析頁
+6. ~~報表分析頁~~ ✅ 已完成
 7. 個人資料設定頁 / Email 通知
 
 ## 測試帳號 (本地開發，密碼皆為 `OneWood2026#`)
@@ -117,7 +118,7 @@
 /products               產品目錄 ✅（搜尋/分類/上架狀態篩選，manager+可新增/編輯/下架）
 /orders                 成交訂單 ✅（唯讀列表，可點擊追溯來源報價）
 /users                  使用者管理 ✅（admin only，含新增/編輯，非admin訪問顯示權限不足）
-/reports                報表分析 (佔位頁，待開發)
+/reports                報表分析 ✅（期間篩選/KPI總覽/6個月趨勢圖/Pipeline甜甜圈圖/業務排行/客戶排行，依角色資料範圍過濾）
 /settings/profile        個人資料 (佔位頁，待開發)
 ```
 
@@ -145,7 +146,8 @@ webapp/
 │       ├── quotes.ts              # 報價 CRUD + 工作流程操作
 │       ├── products.ts            # 產品目錄 CRUD
 │       ├── orders.ts              # 訂單列表
-│       └── users.ts                # 使用者管理
+│       ├── users.ts                # 使用者管理
+│       └── reports.ts              # 報表分析統計摘要(KPI/Pipeline/趨勢/排行)
 ├── public/
 │   └── static/
 │       ├── styles.css
@@ -168,7 +170,8 @@ webapp/
 │           ├── products.js         # 產品目錄頁（manager+可新增/編輯/下架）
 │           ├── orders.js           # 訂單列表頁（唯讀）
 │           ├── users.js            # 使用者管理頁（admin only）
-│           └── placeholders.js     # 其餘頁面佔位（報表分析/個人資料）
+│           ├── reports.js          # 報表分析頁（KPI卡/趨勢圖/Pipeline圖/排行表）
+│           └── placeholders.js     # 其餘頁面佔位（個人資料）
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定
 └── package.json
@@ -185,4 +188,4 @@ curl http://localhost:3000
 - **Platform**: Cloudflare Pages + D1
 - **Status**: 🔧 開發中（尚未正式部署）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-07-26
+- **Last Updated**: 2026-07-27

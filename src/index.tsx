@@ -10,6 +10,7 @@ import quoteRoutes from './routes/quotes'
 import productRoutes from './routes/products'
 import orderRoutes from './routes/orders'
 import userRoutes from './routes/users'
+import reportRoutes from './routes/reports'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -24,6 +25,7 @@ app.route('/api/quotes', quoteRoutes)
 app.route('/api/products', productRoutes)
 app.route('/api/orders', orderRoutes)
 app.route('/api/users', userRoutes)
+app.route('/api/reports', reportRoutes)
 
 // ---- Page Shell (SPA-like, 由前端 JS 依路徑渲染對應內容) ----
 function pageShell(title: string) {
@@ -70,6 +72,7 @@ function pageShell(title: string) {
   <script src="/static/pages/products.js"></script>
   <script src="/static/pages/orders.js"></script>
   <script src="/static/pages/users.js"></script>
+  <script src="/static/pages/reports.js"></script>
   <script src="/static/pages/placeholders.js"></script>
   <script src="/static/js/main.js"></script>
 </body>

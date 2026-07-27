@@ -1,6 +1,6 @@
 // ============================================================
 // 佔位頁面（後續迭代將擴充完整功能）
-// 尚未開發：報表分析 / 個人資料設定
+// 尚未開發：個人資料設定
 // ============================================================
 window.Pages = window.Pages || {}
 
@@ -15,10 +15,6 @@ function comingSoon(activeKey, title, desc) {
       <p class="text-sm text-gray-400 max-w-sm">${desc}</p>
       <a href="/" class="mt-6 text-primary-600 text-sm hover:underline">回首頁總覽</a>
     </div>`)
-}
-
-Pages.reports = function () {
-  comingSoon('reports', '報表分析', '業績排行、轉換率、Pipeline 漏斗報表將於下一階段開發完成。')
 }
 
 Pages.profile = function () {
