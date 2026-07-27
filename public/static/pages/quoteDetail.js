@@ -322,9 +322,10 @@ function exportQuotePdf(q) {
   y += 20
   doc.setFontSize(9)
   doc.setTextColor(100)
-  doc.text(COMPANY_INFO.addressEn, marginX, y)
-  y += 14
-  doc.text(`Tel: ${COMPANY_INFO.phone}  |  ${COMPANY_INFO.contactPerson}  Tel: ${COMPANY_INFO.contactPhone}`, marginX, y)
+  const addressLines = doc.splitTextToSize(COMPANY_INFO.addressEn, pageWidth - marginX * 2)
+  doc.text(addressLines, marginX, y)
+  y += 12 * addressLines.length
+  doc.text(`Tel: ${COMPANY_INFO.phone}  |  ${COMPANY_INFO.email}  |  ${COMPANY_INFO.website}`, marginX, y)
   doc.setTextColor(0)
 
   y += 26

@@ -12,7 +12,7 @@ Pages.login = function () {
           <i class="fas fa-bolt text-white text-2xl"></i>
         </div>
         <h1 class="text-2xl font-bold text-white">一木工程</h1>
-        <p class="text-primary-100 text-xs mt-0.5">ONE WOOD LIMITED</p>
+        <p class="text-primary-100 text-xs mt-0.5">One Wood Limited</p>
         <p class="text-primary-100 text-sm mt-1">B2B 報價管理 · 客戶關係 · 銷售一體化平台</p>
       </div>
 

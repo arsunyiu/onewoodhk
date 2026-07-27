@@ -66,7 +66,13 @@
 `quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`
 
 ## 公司資訊／業務預設值（依實際報價單範本校正）
-系統預設值依「一木工程有限公司 ONE WOOD LIMITED」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端)：
+系統預設值依「一木工程有限公司 One Wood Limited」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端，兩處欄位需保持同步，無共用模組機制)：
+- **公司名稱**：一木工程有限公司 / One Wood Limited
+- **地址**：九龍紅磡黃埔新邨德民街德民大廈E2舖（Shop E2, Tak Man Building, Tak Man Street, Whampoa New Village, Hung Hom, Kowloon, Hong Kong）
+- **電話**：+852 9555 5124
+- **網頁**：onewood.com.hk
+- **電郵**：sales@onewood.com.hk
+- （舊有 `contactPerson`/`contactPhone`（Wa Tong / 6466-6293）欄位已移除，PDF 匯出的聯絡資訊行改為顯示電郵與網頁）
 - **報價單號格式**：`Q-YYMMDDxxx`（如 `Q-260512001`），非之前誤植的 `Q20260701-0001` 格式
 - **預設幣別**：HKD（港幣）— 香港無銷售稅(VAT/GST)，故**預設稅率為 0**
 - **有效期限**：未指定時自動帶入建立日起 30 天
