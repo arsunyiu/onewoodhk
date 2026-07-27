@@ -185,7 +185,55 @@ curl http://localhost:3000
 ```
 
 ## 部署
-- **Platform**: Cloudflare Pages + D1
-- **Status**: 🔧 開發中（尚未正式部署）
+- **Platform**: Cloudflare Workers（Genspark Hosted Deploy，`gsk hosted *`）+ D1
+- **Status**: ✅ 已正式部署
+- **正式網址**: https://app.onewood.com.hk （自訂網域，綁定至 Hosted Worker）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
 - **Last Updated**: 2026-07-27
+
+### ⚠️ 首次部署 / 重建 D1・Worker 後的固定檢查清單
+
+**背景**：`gsk hosted deploy` 只會自動套用 D1 **migrations**（建表結構），
+**不會**自動套用 `seed.sql`（測試/初始資料），也**不會**保留或建立
+Worker 所需的 **secrets**（例如 `JWT_SECRET`）。若部署後跳過以下步驟，
+正式站會出現「資料庫是空的（登入密碼一直錯）」或「登入時 500 錯誤」
+（`JWT_SECRET` 未設定導致 sign/verify 失敗）等問題 —— 這是本專案曾
+在正式環境（`app.onewood.com.hk`）實際發生過的兩個根因，已修復並將
+其自動化，避免再次發生。
+
+**每次「首次部署」或「重建 D1 / Worker」（`--rebuild_db` / `--recreate_worker`）之後，務必依序執行：**
+
+```bash
+cd /home/user/webapp
+
+# 一次執行「套用 seed 資料」+「確認/設定 secrets」兩步驟
+bash scripts/first_deploy_checklist.sh
+```
+
+或分別單獨執行：
+
+```bash
+# Step 1：將 seed.sql 逐句套用到正式 D1（INSERT OR IGNORE，可重複執行、不會覆蓋既有資料）
+bash scripts/apply_seed_to_hosted.sh
+
+# Step 2：確認/設定正式 Worker 所需的 secrets（預設不覆蓋已存在的 secret；
+#         如需強制重新產生並讓所有現有登入 token 失效，加上 --force）
+bash scripts/setup_hosted_secrets.sh
+```
+
+**Step 3（人工驗證，兩個腳本執行完畢後務必手動確認）：**
+1. 用 `seed.sql` 內任一測試帳號（見上方「測試帳號」章節，密碼皆為 `OneWood2026#`）在正式網址登入
+2. 確認 `/api/auth/me`、`/api/dashboard/summary`、`/api/reports/summary?range=90d` 皆回應 200 且資料正常
+
+**腳本說明：**
+| 腳本 | 用途 | 是否可重複執行 |
+|---|---|---|
+| `scripts/sql_split.py` | 將 `.sql` 檔案正確切分為個別可執行語句（處理字串內分號、`--` 註解） | 是（純解析，無副作用） |
+| `scripts/apply_seed_to_hosted.sh` | 逐句透過 `gsk hosted d1_execute` 將 `seed.sql` 套用到正式 D1 | 是（`INSERT OR IGNORE`，已存在資料不會被覆蓋/報錯） |
+| `scripts/setup_hosted_secrets.sh` | 檢查並設定正式 Worker 所需 secrets（目前僅 `JWT_SECRET`） | 是（預設偵測已存在則跳過；`--force` 才會覆蓋） |
+| `scripts/first_deploy_checklist.sh` | 依序執行以上兩支腳本的便利入口 | 是 |
+
+**⚠️ 注意事項：**
+- `setup_hosted_secrets.sh` 若加上 `--force` 會產生新的 `JWT_SECRET` 並覆蓋舊值 —— 這會讓所有現有使用者的登入 token 立即失效（需重新登入），僅在懷疑 secret 洩漏或需要輪換時使用。
+- Secrets 的值一經 `gsk hosted secret_put` 設定後無法再讀回（write-only），`gsk hosted secret_list` 只能看到名稱，看不到值。
+- 一般日常重新部署（未加 `--rebuild_db` / `--recreate_worker`）通常不需要重跑本檢查清單，因為 D1 資料與既有 secrets 不會被清除；但若不確定，重新執行一次也是安全的（皆為 idempotent 設計）。
