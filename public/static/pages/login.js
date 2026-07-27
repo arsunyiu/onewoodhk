@@ -34,7 +34,7 @@ Pages.login = function () {
               <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400 text-sm"></i>
               <input type="password" id="login-password" required autocomplete="current-password"
                 class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="輸入密碼" value="password123" />
+                placeholder="輸入密碼" value="OneWood2026#" />
             </div>
           </div>
           <div id="login-error" class="hidden text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
@@ -46,7 +46,7 @@ Pages.login = function () {
         </form>
 
         <div class="mt-6 pt-5 border-t border-gray-100">
-          <p class="text-xs text-gray-400 mb-2">測試帳號（密碼皆為 password123）：</p>
+          <p class="text-xs text-gray-400 mb-2">測試帳號（密碼皆為 OneWood2026#）：</p>
           <div class="grid grid-cols-2 gap-2 text-xs">
             <button data-quick="admin@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user-shield text-gray-400 mr-1"></i> 管理員
@@ -73,7 +73,7 @@ Pages.login = function () {
   document.querySelectorAll('.quick-login').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.getElementById('login-email').value = btn.dataset.quick
-      document.getElementById('login-password').value = 'password123'
+      document.getElementById('login-password').value = 'OneWood2026#'
     })
   })
 
