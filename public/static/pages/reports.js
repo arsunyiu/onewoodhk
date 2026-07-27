@@ -115,8 +115,8 @@ function renderReports(d) {
   renderKpiCards(d.kpi)
   renderTrendChart(d.trend)
   renderPipelineChart(d.pipeline)
-  renderOwnerTable(d.by_owner)
-  renderCustomerTable(d.by_customer)
+  renderReportOwnerTable(d.by_owner)
+  renderReportCustomerTable(d.by_customer)
   const lbl = document.getElementById('rpt-owner-range-label')
   if (lbl) lbl.textContent = RANGE_LABELS[d.range] || ''
 }
@@ -231,7 +231,7 @@ function renderPipelineChart(pipeline) {
   })
 }
 
-function renderOwnerTable(rows) {
+function renderReportOwnerTable(rows) {
   const tbody = document.getElementById('rpt-owner-tbody')
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-8">尚無資料</td></tr>`
@@ -263,7 +263,7 @@ function renderOwnerTable(rows) {
     .join('')
 }
 
-function renderCustomerTable(rows) {
+function renderReportCustomerTable(rows) {
   const tbody = document.getElementById('rpt-customer-tbody')
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-8">尚無成交紀錄</td></tr>`
