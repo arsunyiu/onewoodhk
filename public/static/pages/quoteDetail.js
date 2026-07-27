@@ -299,156 +299,167 @@ function runQuoteRejectAction(id) {
 }
 
 // ============================================================
-// PDF 匯出：使用 jsPDF (CDN) 於前端產生，樣式比照公司實際報價單範本
+// PDF 匯出：以 HTML/CSS 版面 + html2canvas 轉圖 + jsPDF 拼頁
+// （改用瀏覽器原生字型渲染，避免 jsPDF 內建字型不支援中文而產生亂碼）
 // ============================================================
-function exportQuotePdf(q) {
-  if (!window.jspdf) {
+function buildQuotePdfHtml(q) {
+  const siteAddress = q.site_address || q.customer_address || ''
+  const esc = Fmt.escapeHtml
+
+  const itemRows = q.items.map((it, idx) => `
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:7px 4px;color:#9ca3af;">${idx + 1}</td>
+      <td style="padding:7px 4px;">
+        <div style="color:#1f2937;">${esc(it.item_name)}</div>
+        ${it.description ? `<div style="font-size:10px;color:#9ca3af;margin-top:2px;">${esc(it.description)}</div>` : ''}
+      </td>
+      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
+      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${esc(it.unit)}</td>
+      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
+      <td style="padding:7px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
+    </tr>`).join('')
+
+  const discountRow = q.discount_value ? `
+    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
+      <span>${q.discount_type === 'percent' ? `折扣 (${q.discount_value}%)` : '折扣'}</span>
+      <span>-${Fmt.currency(q.subtotal - (q.total_amount - q.tax_amount), q.currency)}</span>
+    </div>` : ''
+
+  const taxRow = q.tax_amount ? `
+    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
+      <span>稅額 (${(q.tax_rate * 100).toFixed(0)}%)</span>
+      <span>${Fmt.currency(q.tax_amount, q.currency)}</span>
+    </div>` : ''
+
+  const termsBlock = q.terms ? `
+    <div style="margin-top:18px;">
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(q.terms)}</div>
+    </div>` : ''
+
+  return `
+  <div style="width:760px;padding:36px;font-family:-apple-system,'PingFang TC','Noto Sans CJK TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#1f2937;background:#fff;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-size:24px;font-weight:700;">${esc(COMPANY_INFO.nameEn)}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:1px;">${esc(COMPANY_INFO.nameZh)}</div>
+      </div>
+      <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">報價單 QUOTATION</div>
+    </div>
+
+    <div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5;">
+      <div>${esc(COMPANY_INFO.addressZh)}</div>
+      <div>${esc(COMPANY_INFO.addressEn)}</div>
+      <div>Tel: ${esc(COMPANY_INFO.phone)} ｜ ${esc(COMPANY_INFO.email)} ｜ ${esc(COMPANY_INFO.website)}</div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:12px;">
+      <div><span style="font-weight:700;">報價單號：</span>${esc(q.quote_no)}</div>
+      <div><span style="font-weight:700;">日期：</span>${Fmt.date(q.created_at)}</div>
+      <div><span style="font-weight:700;">有效期限：</span>${Fmt.date(q.valid_until)}</div>
+      <div><span style="font-weight:700;">客戶：</span>${esc(q.company_name)}</div>
+      ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">工程地址：</span>${esc(siteAddress)}</div>` : ''}
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
+      <thead>
+        <tr style="background:#2563eb;color:#fff;">
+          <th style="padding:7px 4px;text-align:left;font-weight:600;width:24px;">No.</th>
+          <th style="padding:7px 4px;text-align:left;font-weight:600;">項目說明</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">數量</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">單位</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:64px;">單價</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:76px;">小計</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+      <div style="width:220px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
+          <span>未稅小計</span><span>${Fmt.currency(q.subtotal, q.currency)}</span>
+        </div>
+        ${discountRow}
+        ${taxRow}
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;">
+          <span>總金額</span><span>${Fmt.currency(q.total_amount, q.currency)}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
+      <div style="font-size:11px;color:#4b5563;">
+        Bank: ${esc(COMPANY_INFO.bank.name)}　Account No.: ${esc(COMPANY_INFO.bank.accountNo)}　Name: ${esc(COMPANY_INFO.bank.accountName)}
+      </div>
+    </div>
+
+    ${termsBlock}
+
+    <div style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
+      ${esc(COMPANY_INFO.footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
+    </div>
+  </div>`
+}
+
+async function exportQuotePdf(q) {
+  if (!window.jspdf || !window.html2canvas) {
     showToast('PDF 匯出元件載入中，請稍後再試', 'error')
     return
   }
-  const { jsPDF } = window.jspdf
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const marginX = 40
-  let y = 50
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.text(COMPANY_INFO.nameEn, marginX, y)
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'normal')
-  doc.text('QUOTATION', pageWidth - marginX, y, { align: 'right' })
-
-  y += 20
-  doc.setFontSize(9)
-  doc.setTextColor(100)
-  const addressLines = doc.splitTextToSize(COMPANY_INFO.addressEn, pageWidth - marginX * 2)
-  doc.text(addressLines, marginX, y)
-  y += 12 * addressLines.length
-  doc.text(`Tel: ${COMPANY_INFO.phone}  |  ${COMPANY_INFO.email}  |  ${COMPANY_INFO.website}`, marginX, y)
-  doc.setTextColor(0)
-
-  y += 26
-  doc.setDrawColor(220)
-  doc.line(marginX, y, pageWidth - marginX, y)
-  y += 22
-
-  doc.setFontSize(10)
-  const leftColX = marginX
-  const rightColX = pageWidth / 2 + 10
-  doc.setFont('helvetica', 'bold')
-  doc.text('Quote No.:', leftColX, y)
-  doc.text('Date:', rightColX, y)
-  doc.setFont('helvetica', 'normal')
-  doc.text(q.quote_no, leftColX + 65, y)
-  doc.text(Fmt.date(q.created_at), rightColX + 40, y)
-
-  y += 18
-  doc.setFont('helvetica', 'bold')
-  doc.text('Valid Until:', leftColX, y)
-  doc.text('Customer:', rightColX, y)
-  doc.setFont('helvetica', 'normal')
-  doc.text(Fmt.date(q.valid_until), leftColX + 65, y)
-  doc.text(q.company_name, rightColX + 55, y, { maxWidth: pageWidth - rightColX - 55 - marginX })
-
-  const siteAddress = q.site_address || q.customer_address
-  if (siteAddress) {
-    y += 18
-    doc.setFont('helvetica', 'bold')
-    doc.text('Site Address:', leftColX, y)
-    doc.setFont('helvetica', 'normal')
-    doc.text(siteAddress, leftColX + 80, y, { maxWidth: pageWidth - leftColX - 80 - marginX })
+  const btn = document.getElementById('qd-export-pdf')
+  const originalHtml = btn ? btn.innerHTML : ''
+  if (btn) {
+    btn.disabled = true
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i>匯出中...'
   }
 
-  y += 30
+  const container = document.createElement('div')
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
+  container.innerHTML = buildQuotePdfHtml(q)
+  document.body.appendChild(container)
 
-  // 明細表頭
-  const col = { no: marginX, desc: marginX + 30, amount: pageWidth - marginX }
-  doc.setFillColor(37, 99, 235)
-  doc.rect(marginX, y - 12, pageWidth - marginX * 2, 20, 'F')
-  doc.setTextColor(255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.text('No.', col.no + 4, y + 2)
-  doc.text('Description', col.desc, y + 2)
-  doc.text('Amount', col.amount - 4, y + 2, { align: 'right' })
-  doc.setTextColor(0)
-  y += 18
+  try {
+    const canvas = await html2canvas(container.firstElementChild, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    })
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  q.items.forEach((it, idx) => {
-    const lines = doc.splitTextToSize(
-      it.item_name + (it.description ? ' — ' + it.description : ''),
-      col.amount - col.desc - 60
-    )
-    const lineHeight = 12
-    const blockHeight = Math.max(lineHeight * lines.length, 16)
+    const { jsPDF } = window.jspdf
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const imgWidth = pdfWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    const imgData = canvas.toDataURL('image/png')
 
-    if (y + blockHeight > 760) {
-      doc.addPage()
-      y = 50
+    let heightLeft = imgHeight
+    let position = 0
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+    heightLeft -= pdfHeight
+
+    while (heightLeft > 0.5) {
+      position -= pdfHeight
+      pdf.addPage()
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pdfHeight
     }
 
-    doc.text(String(idx + 1), col.no + 4, y)
-    doc.text(lines, col.desc, y)
-    doc.text(Number(it.line_total).toLocaleString(), col.amount - 4, y, { align: 'right' })
-    y += blockHeight
-    doc.setDrawColor(235)
-    doc.line(marginX, y - 4, pageWidth - marginX, y - 4)
-  })
-
-  y += 10
-  doc.setDrawColor(220)
-  doc.line(marginX, y, pageWidth - marginX, y)
-  y += 18
-
-  const totalsX = pageWidth - marginX - 160
-  doc.setFont('helvetica', 'normal')
-  doc.text('Subtotal:', totalsX, y)
-  doc.text(Fmt.currency(q.subtotal, q.currency), pageWidth - marginX - 4, y, { align: 'right' })
-
-  if (q.discount_value) {
-    y += 16
-    const label = q.discount_type === 'percent' ? `Discount (${q.discount_value}%):` : 'Discount:'
-    doc.text(label, totalsX, y)
-    doc.text('-' + Fmt.currency(q.subtotal - (q.total_amount - q.tax_amount), q.currency), pageWidth - marginX - 4, y, { align: 'right' })
+    pdf.save(`${q.quote_no}.pdf`)
+  } catch (err) {
+    console.error(err)
+    showToast('PDF 匯出失敗，請稍後再試', 'error')
+  } finally {
+    document.body.removeChild(container)
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = originalHtml
+    }
   }
-  if (q.tax_amount) {
-    y += 16
-    doc.text(`Tax (${(q.tax_rate * 100).toFixed(0)}%):`, totalsX, y)
-    doc.text(Fmt.currency(q.tax_amount, q.currency), pageWidth - marginX - 4, y, { align: 'right' })
-  }
-
-  y += 20
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.text('Total:', totalsX, y)
-  doc.text(Fmt.currency(q.total_amount, q.currency), pageWidth - marginX - 4, y, { align: 'right' })
-
-  y += 34
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Bank Information', marginX, y)
-  y += 14
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Bank: ${COMPANY_INFO.bank.name}   Account No.: ${COMPANY_INFO.bank.accountNo}   Name: ${COMPANY_INFO.bank.accountName}`, marginX, y)
-
-  if (q.terms) {
-    y += 22
-    doc.setFont('helvetica', 'bold')
-    doc.text('Terms:', marginX, y)
-    y += 14
-    doc.setFont('helvetica', 'normal')
-    const termLines = doc.splitTextToSize(q.terms, pageWidth - marginX * 2)
-    doc.text(termLines, marginX, y)
-    y += termLines.length * 12
-  }
-
-  y += 24
-  doc.setFontSize(8)
-  doc.setTextColor(130)
-  doc.text(`${COMPANY_INFO.footerNote}  |  ${COMPANY_INFO.nameZh}  |  Tel: ${COMPANY_INFO.phone}`, marginX, Math.min(y, 800))
-
-  doc.save(`${q.quote_no}.pdf`)
 }
