@@ -8,8 +8,8 @@ Pages.login = function () {
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 to-wood-600 px-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <div class="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur flex items-center justify-center mx-auto mb-4 p-1.5">
-          <img src="/static/images/logo.png" alt="一木工程" class="w-full h-full object-contain" />
+        <div class="w-20 h-20 rounded-full bg-white p-1 mx-auto mb-4 shadow-lg">
+          <img src="/static/images/logo.png" alt="一木工程" class="w-full h-full object-contain rounded-full" />
         </div>
         <h1 class="text-2xl font-bold text-white">一木工程</h1>
         <p class="text-primary-100 text-xs mt-0.5">One Wood Limited</p>
