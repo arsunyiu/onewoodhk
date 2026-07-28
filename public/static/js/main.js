@@ -17,6 +17,7 @@ const routes = [
   { pattern: /^\/products$/, page: () => Pages.products() },
   { pattern: /^\/orders$/, page: () => Pages.orders() },
   { pattern: /^\/users$/, page: () => Pages.users() },
+  { pattern: /^\/roles$/, page: () => Pages.roles() },
   { pattern: /^\/reports$/, page: () => Pages.reports() },
   { pattern: /^\/settings\/profile$/, page: () => Pages.profile() }
 ]

@@ -60,6 +60,7 @@ Pages.users = async function () {
 
 async function loadUserList() {
   const tbody = document.getElementById('user-table-body')
+  if (!tbody) return
   tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>載入中...</td></tr>`
   try {
     const res = await API.get('/users')
@@ -72,6 +73,7 @@ async function loadUserList() {
 
 function renderUserTable(list) {
   const tbody = document.getElementById('user-table-body')
+  if (!tbody) return
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">尚無使用者資料</td></tr>`
     return

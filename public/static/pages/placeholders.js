@@ -1,6 +1,5 @@
 // ============================================================
 // 佔位頁面（後續迭代將擴充完整功能）
-// 尚未開發：個人資料設定
 // ============================================================
 window.Pages = window.Pages || {}
 
@@ -15,8 +14,4 @@ function comingSoon(activeKey, title, desc) {
       <p class="text-sm text-gray-400 max-w-sm">${desc}</p>
       <a href="/" class="mt-6 text-primary-600 text-sm hover:underline">回首頁總覽</a>
     </div>`)
-}
-
-Pages.profile = function () {
-  comingSoon('dashboard', '個人資料設定', '個人資料設定頁面將於下一階段開發完成。')
 }

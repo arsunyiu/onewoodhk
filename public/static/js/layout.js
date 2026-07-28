@@ -13,6 +13,7 @@ function renderLayout(activeKey) {
   ]
   if (Auth.isAdmin()) {
     menus.push({ key: 'users', href: '/users', icon: 'fa-users-gear', label: '使用者管理' })
+    menus.push({ key: 'roles', href: '/roles', icon: 'fa-user-shield', label: '角色管理' })
   }
 
   const menuHtml = menus
@@ -38,9 +39,11 @@ function renderLayout(activeKey) {
       <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">${menuHtml}</nav>
       <div class="p-3 border-t border-gray-100">
         <a href="/settings/profile" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100">
-          <div class="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
+          ${user?.avatar_url
+            ? `<img src="${user.avatar_url}" alt="${user?.name || ''}" class="w-9 h-9 rounded-full object-cover shrink-0" />`
+            : `<div class="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold shrink-0">
             ${(user?.name || '?').charAt(0)}
-          </div>
+          </div>`}
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-800 truncate">${user?.name || ''}</p>
             <p class="text-xs text-gray-400">${Auth.roleLabel(user?.role)}</p>
