@@ -13,8 +13,12 @@
 - **產品目錄**：產品/服務項目 CRUD API（manager/admin 可編輯，軟刪除下架），前端已完成**產品目錄頁**(搜尋/分類篩選/上架狀態篩選、manager+權限的新增/編輯Modal與下架操作，sales角色僅可檢視)
 - **成交訂單**：報價成交後自動產生訂單記錄，前端已完成**訂單列表頁**(唯讀，分頁顯示，可點擊追溯來源報價單)
 - **使用者管理**：使用者列表 API、新增/編輯 API（admin only），前端已完成**使用者管理頁**(admin only，含新增使用者、編輯角色/主管歸屬/電話/啟用狀態/重設密碼，非admin直接訪問會顯示權限不足提示)
+- **角色管理**：前端新增**角色管理頁**(`/roles`，admin only)：權限矩陣表(6大模組×3角色)、團隊組織圖(依manager_id分組)、快速編輯(重用使用者管理頁的Modal)
+- **個人資料設定**：`PUT /api/auth/me` 自助更新姓名/電話/大頭貼、密碼變更(需驗證舊密碼)，前端**個人資料頁**(`/settings/profile`，所有登入者可用)
 - **報表分析**：新增 `GET /api/reports/summary?range=` 統計 API(依角色資料範圍過濾)，前端已完成**報表分析頁**：期間篩選(近30/90/180/365天/全部)、KPI總覽卡(期間報價數/成交金額/成交轉換率/平均成交金額)、近6個月報價建立量vs成交金額趨勢圖(Chart.js雙軸長條+線圖)、Pipeline即時狀態分布甜甜圈圖、業務業績排行表(依成交金額排序，含排名徽章與進度條)、客戶貢獻排行Top10(依累計成交金額，可點擊追溯客戶詳情)
-- **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者的新增編輯表單共用
+- **財務管理(訂單收款追蹤)**：新增 `order_payments` 表記錄成交訂單的收款，前端**財務頁**(`/finance`，依角色資料範圍過濾)：訂單收款總覽(訂單金額/已收金額/未收餘額/付款狀態)、**訂單收款詳情頁**(`/finance/:id`，收款紀錄列表 + manager/admin可登記新收款/刪除收款)
+- **會計管理(公司出入帳)**：新增 `accounting_entries` 表記錄公司整體收入/支出(含工程支出、人工、材料採購等分類)，前端**會計頁**(`/accounting`，僅admin/manager可用)：收支總覽卡(近一年總收入/總支出/淨利)、近6個月收支趨勢圖(Chart.js)、分類統計、出入帳列表(可篩選類型/分類、新增/編輯/admin可刪除)
+- **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者/會計的新增編輯表單共用
 - **角色權限與資料範圍控制**：
   - `admin`：可見全公司所有資料
   - `manager`：可見自己 + 團隊(manager_id指向自己)成員的資料
@@ -47,6 +51,18 @@
 | GET | /api/users | 使用者列表 | 需登入 |
 | POST/PUT | /api/users | 新增/編輯使用者 | admin |
 | GET | /api/reports/summary | 報表統計摘要 `?range=30d\|90d\|180d\|365d\|all`（KPI/Pipeline快照/6個月趨勢/業務排行/客戶排行) | 需登入(依角色範圍) |
+| PUT | /api/auth/me | 自助更新個人資料(姓名/電話/大頭貼)、變更密碼(需驗證舊密碼) | 需登入 |
+| GET | /api/finance/summary | 訂單收款總覽(應收/已收/未收) | 需登入(依角色範圍) |
+| GET | /api/finance/orders | 訂單收款列表(含已收金額/未收餘額/付款狀態) `?page=&page_size=` | 需登入(依角色範圍) |
+| GET | /api/finance/orders/:id | 單筆訂單收款詳情(含收款紀錄) | 需登入(依角色範圍) |
+| POST | /api/finance/orders/:id/payments | 登記收款 | manager/admin |
+| DELETE | /api/finance/payments/:id | 刪除收款紀錄 | admin |
+| GET | /api/accounting/categories | 收入/支出分類選項 | manager/admin |
+| GET | /api/accounting/summary | 收支總覽 `?range=` (總收入/總支出/淨利/分類統計/6個月趨勢) | manager/admin |
+| GET | /api/accounting/entries | 出入帳列表 `?type=income\|expense&category=&page=&page_size=` | manager/admin |
+| POST | /api/accounting/entries | 新增出入帳紀錄 | manager/admin |
+| PUT | /api/accounting/entries/:id | 編輯出入帳紀錄 | manager/admin |
+| DELETE | /api/accounting/entries/:id | 刪除出入帳紀錄 | admin |
 
 統一回應格式：`{ success: true, data, pagination? }` 或 `{ success: false, error }`
 
@@ -62,8 +78,10 @@
 | `quote_items` | 報價單明細(快照式，不受產品異動影響) |
 | `quote_approval_logs` | 審批歷程稽核軌跡 |
 | `orders` | 報價成交後自動產生的訂單 |
+| `order_payments` | 訂單收款紀錄(`order_id`關聯orders，`amount`/`payment_date`/`method`/`recorded_by`) |
+| `accounting_entries` | 公司出入帳紀錄(`entry_type`=income/expense，`category`如工程支出/人工/材料採購等，可選關聯`order_id`) |
 
-`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`
+`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`、`migrations/0003_finance_accounting.sql`
 
 ## 公司資訊／業務預設值（依實際報價單範本校正）
 系統預設值依「一木工程有限公司 One Wood Limited」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端，兩處欄位需保持同步，無共用模組機制)：
@@ -93,8 +111,9 @@
 
 ## 尚未實作功能 ❌ (下一階段規劃)
 - Email 通知(報價寄送/審批結果) — 需使用者提供第三方服務(如 Resend) API Key
-- 個人資料設定頁
 - 聯絡人/跟進紀錄的編輯與刪除（後端目前僅提供 GET+POST，尚無 PUT/DELETE，如需此功能須先擴充 `customers.ts`）
+- 財務/會計報表匯出(PDF/Excel)、會計分類的自訂管理介面(目前分類為程式碼內建清單)
+- 訂單收款狀態未反向顯示於「成交訂單」列表頁(`orders.js`)，目前需另外進入「財務」頁查看
 
 ## 建議下一步開發順序
 1. ~~報價建立/編輯頁 + 明細項目編輯器~~ ✅ 已完成
@@ -103,7 +122,9 @@
 4. ~~產品目錄、訂單列表 UI~~ ✅ 已完成
 5. ~~使用者管理 UI (admin)~~ ✅ 已完成
 6. ~~報表分析頁~~ ✅ 已完成
-7. 個人資料設定頁 / Email 通知
+7. ~~個人資料設定頁 / 角色管理頁~~ ✅ 已完成
+8. ~~財務(訂單收款追蹤) / 會計(出入帳管理)~~ ✅ 已完成
+9. Email 通知 / 財務會計報表匯出
 
 ## 測試帳號 (本地開發，密碼皆為 `OneWood2026#`)
 | Email | 角色 | 說明 |
@@ -134,9 +155,13 @@
 /quotes/:id/edit        編輯報價 ✅（draft/rejected可編輯，重用建立頁表單）
 /products               產品目錄 ✅（搜尋/分類/上架狀態篩選，manager+可新增/編輯/下架）
 /orders                 成交訂單 ✅（唯讀列表，可點擊追溯來源報價）
+/finance                財務(訂單收款總覽) ✅（依角色資料範圍過濾，訂單金額/已收/未收/付款狀態）
+/finance/:id             訂單收款詳情 ✅（收款紀錄列表，manager/admin可登記/刪除收款）
+/accounting              會計(公司出入帳) ✅（admin/manager only，收支總覽/趨勢圖/分類統計/新增編輯刪除）
 /users                  使用者管理 ✅（admin only，含新增/編輯，非admin訪問顯示權限不足）
+/roles                  角色管理 ✅（admin only，權限矩陣/團隊組織圖/快速編輯，非admin訪問顯示權限不足）
 /reports                報表分析 ✅（期間篩選/KPI總覽/6個月趨勢圖/Pipeline甜甜圈圖/業務排行/客戶排行，依角色資料範圍過濾）
-/settings/profile        個人資料 (佔位頁，待開發)
+/settings/profile        個人資料 ✅（所有登入者可用，基本資料編輯/密碼變更）
 ```
 
 ## 專案結構
@@ -144,7 +169,8 @@
 webapp/
 ├── migrations/
 │   ├── 0001_initial_schema.sql   # D1 資料庫 schema
-│   └── 0002_add_site_address.sql # 新增 quotes.site_address(工程地址)欄位
+│   ├── 0002_add_site_address.sql # 新增 quotes.site_address(工程地址)欄位
+│   └── 0003_finance_accounting.sql # 新增 order_payments(訂單收款) + accounting_entries(公司出入帳)
 ├── seed.sql                       # 測試資料（裝修/水電工程業務情境：5個測試帳號、5個客戶、4筆報價）
 ├── src/
 │   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell + jsPDF CDN
@@ -164,7 +190,9 @@ webapp/
 │       ├── products.ts            # 產品目錄 CRUD
 │       ├── orders.ts              # 訂單列表
 │       ├── users.ts                # 使用者管理
-│       └── reports.ts              # 報表分析統計摘要(KPI/Pipeline/趨勢/排行)
+│       ├── reports.ts              # 報表分析統計摘要(KPI/Pipeline/趨勢/排行)
+│       ├── finance.ts              # 財務：訂單收款CRUD + 收款總覽
+│       └── accounting.ts          # 會計：公司出入帳CRUD + 收支摘要(manager/admin only)
 ├── public/
 │   └── static/
 │       ├── styles.css
@@ -187,8 +215,12 @@ webapp/
 │           ├── products.js         # 產品目錄頁（manager+可新增/編輯/下架）
 │           ├── orders.js           # 訂單列表頁（唯讀）
 │           ├── users.js            # 使用者管理頁（admin only）
+│           ├── roles.js            # 角色管理頁（admin only，權限矩陣/團隊組織圖）
 │           ├── reports.js          # 報表分析頁（KPI卡/趨勢圖/Pipeline圖/排行表）
-│           └── placeholders.js     # 其餘頁面佔位（個人資料）
+│           ├── profile.js          # 個人資料設定頁（所有登入者）
+│           ├── finance.js          # 財務頁（訂單收款總覽 + 收款詳情/登記收款）
+│           ├── accounting.js      # 會計頁（公司出入帳，manager/admin only）
+│           └── placeholders.js     # 其餘頁面佔位
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定
 └── package.json
@@ -206,7 +238,7 @@ curl http://localhost:3000
 - **Status**: ✅ 已正式部署
 - **正式網址**: https://app.onewood.com.hk （自訂網域，綁定至 Hosted Worker）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-07-28（新增正式發票PDF匯出功能）
+- **Last Updated**: 2026-07-28（新增財務(訂單收款追蹤)與會計(公司出入帳)管理功能）
 
 ### ⚠️ 首次部署 / 重建 D1・Worker 後的固定檢查清單
 
