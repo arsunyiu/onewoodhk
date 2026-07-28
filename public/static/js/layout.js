@@ -32,9 +32,7 @@ function renderLayout(activeKey) {
     <!-- Sidebar -->
     <aside class="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
       <div class="h-16 flex items-center gap-2 px-5 border-b border-gray-100">
-        <div class="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center">
-          <i class="fas fa-bolt"></i>
-        </div>
+        <img src="/static/images/logo.png" alt="一木工程" class="w-9 h-9 object-contain shrink-0" />
         <span class="font-bold text-lg text-gray-800">一木工程</span>
       </div>
       <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">${menuHtml}</nav>

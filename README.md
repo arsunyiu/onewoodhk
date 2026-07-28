@@ -80,6 +80,16 @@
 - **收款銀行資訊**：華僑永享 OCBC，用於 PDF 匯出的「收款信息」區塊
 - **報價單法律聲明**：「此報價單經雙方簽署後具有合約效力」，PDF 頁尾統一顯示
 
+## 品牌識別 / 色調系統（參考 onewood.com.hk 官網校正）
+- **系統 Logo**：採用 onewood.com.hk 官網之官方透明底 Logo（金色雙環徽章 + 「一木」燙金字 + 綠色葉枝 + ONE WOOD 文字），存放於 `public/static/images/logo.png`，已加入：
+  - `pageShell()` 的 `<link rel="icon">` / `<link rel="apple-touch-icon">`(favicon)
+  - 側邊選單頂部品牌區塊(`layout.js`)
+  - 登入頁品牌區塊(`login.js`，取代原先的閃電圖示)
+  - 報價單 PDF 匯出頁首(`quoteDetail.js` 的 `buildQuotePdfHtml`)
+- **色調**：Tailwind `primary` 色階由原本的藍色系，改為 onewood.com.hk 官網主色「深綠」(`#1f5b45`/`#2a6a52`)，並新增 `wood` 木棕色階(`#7a5a3a`)作為次要強調色，統一定義於 `src/index.tsx` 的 `tailwind.config`。系統內所有頁面皆使用 `primary-*` Tailwind class（未使用寫死色碼），故此設定變更會自動套用至全系統(客戶/報價/產品/訂單/使用者/報表等頁面)
+- 全域背景色由 `bg-gray-50` 調整為暖白 `#fbfaf7`，貼近官網質感
+- 個別頁面原先寫死的 `blue-*`/`indigo-*`(未走 Tailwind 設定的硬編碼顏色)已手動改為 `primary-*`/`wood-*` 或對應色碼，包含：報價狀態徽章(`utils.js`)、Dashboard 統計卡與Pipeline漏斗圖(`dashboard.js`)、訂單狀態徽章(`orders.js`)、報表KPI卡與圖表配色(`reports.js`)、PDF匯出表頭底色(`quoteDetail.js`)
+
 ## 尚未實作功能 ❌ (下一階段規劃)
 - Email 通知(報價寄送/審批結果) — 需使用者提供第三方服務(如 Resend) API Key
 - 個人資料設定頁
@@ -195,7 +205,7 @@ curl http://localhost:3000
 - **Status**: ✅ 已正式部署
 - **正式網址**: https://app.onewood.com.hk （自訂網域，綁定至 Hosted Worker）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-07-27
+- **Last Updated**: 2026-07-28
 
 ### ⚠️ 首次部署 / 重建 D1・Worker 後的固定檢查清單
 

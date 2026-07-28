@@ -4,7 +4,7 @@
 window.Pages = window.Pages || {}
 
 const ORDER_STATUS_META = {
-  confirmed: { label: '已確認', color: 'bg-blue-100 text-blue-700' },
+  confirmed: { label: '已確認', color: 'bg-primary-100 text-primary-700' },
   delivered: { label: '已完成', color: 'bg-green-100 text-green-700' },
   cancelled: { label: '已取消', color: 'bg-gray-200 text-gray-500' }
 }

@@ -30,9 +30,9 @@ const Fmt = {
 const QuoteStatusMeta = {
   draft:             { label: '草稿',     color: 'bg-gray-100 text-gray-600' },
   pending_approval:  { label: '待審核',   color: 'bg-yellow-100 text-yellow-700' },
-  approved:          { label: '已核准',   color: 'bg-blue-100 text-blue-700' },
+  approved:          { label: '已核准',   color: 'bg-primary-100 text-primary-700' },
   rejected:          { label: '已拒絕',   color: 'bg-red-100 text-red-700' },
-  sent:              { label: '已寄送',   color: 'bg-indigo-100 text-indigo-700' },
+  sent:              { label: '已寄送',   color: 'bg-wood-100 text-wood-700' },
   won:               { label: '已成交',   color: 'bg-green-100 text-green-700' },
   lost:              { label: '已流失',   color: 'bg-gray-200 text-gray-500' }
 }

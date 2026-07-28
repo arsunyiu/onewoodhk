@@ -35,6 +35,8 @@ function pageShell(title: string) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} - 一木工程</title>
+  <link rel="icon" type="image/png" href="/static/images/logo.png">
+  <link rel="apple-touch-icon" href="/static/images/logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -44,18 +46,20 @@ function pageShell(title: string) {
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <link href="/static/styles.css" rel="stylesheet">
   <script>
+    // 色調參考 onewood.com.hk 官網品牌色：深綠 + 木棕
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: { 50:'#eff6ff',100:'#dbeafe',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8' }
+            primary: { 50:'#eaf3ef',100:'#d3e6dd',500:'#2a6a52',600:'#1f5b45',700:'#163f30' },
+            wood:    { 50:'#f7f3ee',100:'#ece2d4',500:'#7a5a3a',600:'#63472c',700:'#4f3823' }
           }
         }
       }
     }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-[#fbfaf7] text-gray-800">
   <div id="app"></div>
   <script src="/static/js/api.js"></script>
   <script src="/static/js/auth.js"></script>

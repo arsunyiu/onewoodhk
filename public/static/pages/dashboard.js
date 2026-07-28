@@ -45,8 +45,8 @@ Pages.dashboard = async function () {
 
 function renderDashboard(d) {
   document.getElementById('dash-cards').innerHTML = `
-    ${dashCard('fa-building-user', 'text-blue-600 bg-blue-50', '客戶總數', d.customers.total, `潛在 ${d.customers.lead} · 合作中 ${d.customers.active}`)}
-    ${dashCard('fa-file-invoice-dollar', 'text-indigo-600 bg-indigo-50', 'Pipeline 金額', Fmt.currency(d.pipeline_amount), '待審核/已核准/已寄送 報價總額')}
+    ${dashCard('fa-building-user', 'text-primary-600 bg-primary-50', '客戶總數', d.customers.total, `潛在 ${d.customers.lead} · 合作中 ${d.customers.active}`)}
+    ${dashCard('fa-file-invoice-dollar', 'text-wood-600 bg-wood-50', 'Pipeline 金額', Fmt.currency(d.pipeline_amount), '待審核/已核准/已寄送 報價總額')}
     ${dashCard('fa-sack-dollar', 'text-green-600 bg-green-50', '本月成交金額', Fmt.currency(d.won_this_month.amount), `共 ${d.won_this_month.count} 筆成交`)}
     ${dashCard('fa-hourglass-half', 'text-yellow-600 bg-yellow-50', '待審核報價', d.pipeline.pending_approval || 0, '等待主管核准')}
   `
@@ -61,7 +61,7 @@ function renderDashboard(d) {
       labels,
       datasets: [{
         data,
-        backgroundColor: ['#9ca3af','#eab308','#3b82f6','#6366f1','#22c55e','#94a3b8','#ef4444'],
+        backgroundColor: ['#9ca3af','#eab308','#1f5b45','#7a5a3a','#22c55e','#94a3b8','#ef4444'],
         borderRadius: 6
       }]
     },

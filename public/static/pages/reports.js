@@ -74,7 +74,7 @@ Pages.reports = async function () {
       <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div class="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 class="text-sm font-semibold text-gray-700">
-            <i class="fas fa-trophy text-indigo-500 mr-1"></i> 客戶貢獻排行 Top 10（累計成交）
+            <i class="fas fa-trophy text-wood-500 mr-1"></i> 客戶貢獻排行 Top 10（累計成交）
           </h2>
         </div>
         <div class="overflow-x-auto">
@@ -124,9 +124,9 @@ function renderReports(d) {
 function renderKpiCards(kpi) {
   const winRateStr = kpi.win_rate === null ? '-' : `${kpi.win_rate}%`
   document.getElementById('rpt-kpi-cards').innerHTML = `
-    ${kpiCard('fa-file-invoice-dollar', 'text-blue-600 bg-blue-50', '期間報價數', kpi.total_quotes, Fmt.currency(kpi.total_amount))}
+    ${kpiCard('fa-file-invoice-dollar', 'text-primary-600 bg-primary-50', '期間報價數', kpi.total_quotes, Fmt.currency(kpi.total_amount))}
     ${kpiCard('fa-sack-dollar', 'text-green-600 bg-green-50', '期間成交金額', Fmt.currency(kpi.won_amount), `共 ${kpi.won_count} 筆成交`)}
-    ${kpiCard('fa-percent', 'text-indigo-600 bg-indigo-50', '成交轉換率', winRateStr, `成交 ${kpi.won_count} / 流失 ${kpi.lost_count}`)}
+    ${kpiCard('fa-percent', 'text-wood-600 bg-wood-50', '成交轉換率', winRateStr, `成交 ${kpi.won_count} / 流失 ${kpi.lost_count}`)}
     ${kpiCard('fa-coins', 'text-yellow-600 bg-yellow-50', '平均成交金額', Fmt.currency(kpi.avg_deal_size), `新增客戶 ${kpi.new_customers} 位`)}
   `
 }
@@ -159,7 +159,7 @@ function renderTrendChart(trend) {
           type: 'bar',
           label: '報價建立量（筆）',
           data: createdData,
-          backgroundColor: '#93c5fd',
+          backgroundColor: '#7a5a3a',
           borderRadius: 6,
           yAxisID: 'y'
         },
@@ -204,7 +204,7 @@ function renderTrendChart(trend) {
 function renderPipelineChart(pipeline) {
   const keys = ['draft', 'pending_approval', 'approved', 'sent', 'won', 'lost', 'rejected']
   const labels = ['草稿', '待審核', '已核准', '已寄送', '已成交', '已流失', '已拒絕']
-  const colors = ['#9ca3af', '#eab308', '#3b82f6', '#6366f1', '#22c55e', '#94a3b8', '#ef4444']
+  const colors = ['#9ca3af', '#eab308', '#1f5b45', '#7a5a3a', '#22c55e', '#94a3b8', '#ef4444']
   const data = keys.map((k) => pipeline[k]?.count || 0)
 
   if (ReportsCharts.pipeline) ReportsCharts.pipeline.destroy()

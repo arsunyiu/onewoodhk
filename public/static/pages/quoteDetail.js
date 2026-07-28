@@ -340,9 +340,12 @@ function buildQuotePdfHtml(q) {
   return `
   <div style="width:760px;padding:36px;font-family:-apple-system,'PingFang TC','Noto Sans CJK TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#1f2937;background:#fff;box-sizing:border-box;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div>
-        <div style="font-size:24px;font-weight:700;">${esc(COMPANY_INFO.nameEn)}</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:1px;">${esc(COMPANY_INFO.nameZh)}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="/static/images/logo.png" style="width:44px;height:44px;object-fit:contain;" crossorigin="anonymous" />
+        <div>
+          <div style="font-size:24px;font-weight:700;">${esc(COMPANY_INFO.nameEn)}</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:1px;">${esc(COMPANY_INFO.nameZh)}</div>
+        </div>
       </div>
       <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">報價單 QUOTATION</div>
     </div>
@@ -365,7 +368,7 @@ function buildQuotePdfHtml(q) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:#2563eb;color:#fff;">
+        <tr style="background:#1f5b45;color:#fff;">
           <th style="padding:7px 4px;text-align:left;font-weight:600;width:24px;">No.</th>
           <th style="padding:7px 4px;text-align:left;font-weight:600;">項目說明</th>
           <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">數量</th>
