@@ -133,7 +133,7 @@ function renderQuoteForm(existing) {
           </div>
           <div class="md:col-span-2">
             <label class="block text-xs font-medium text-gray-500 mb-1">工程地址 <span class="text-gray-400">(施工地點，如與客戶地址不同請填寫)</span></label>
-            <input id="qf-site-address" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.site_address || '')}" placeholder="例：南昌村,昌賢樓713室"
+            <input id="qf-site-address" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.site_address || '')}" placeholder="例：沙田第一城20座3樓H室"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50" />
           </div>
 
