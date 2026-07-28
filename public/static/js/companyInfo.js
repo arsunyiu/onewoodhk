@@ -16,5 +16,6 @@ const COMPANY_INFO = {
     accountName: 'One Wood Limited'
   },
   quoteValidDays: 30,
-  footerNote: '此報價單經雙方簽署後具有合約效力'
+  footerNote: '此報價單經雙方簽署後具有合約效力',
+  invoiceFooterNote: '此發票乃根據雙方已簽署之報價單開立，為正式收款憑證'
 }

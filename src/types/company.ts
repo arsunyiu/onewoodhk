@@ -19,5 +19,6 @@ export const COMPANY_INFO = {
   // 香港無銷售稅（VAT/GST），報價單預設不計稅
   defaultTaxRate: 0,
   defaultCurrency: 'HKD',
-  footerNote: '此報價單經雙方簽署後具有合約效力'
+  footerNote: '此報價單經雙方簽署後具有合約效力',
+  invoiceFooterNote: '此發票乃根據雙方已簽署之報價單開立，為正式收款憑證'
 }

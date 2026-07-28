@@ -63,8 +63,12 @@ function renderQuoteDetail(q) {
         </div>
         <div class="flex items-center gap-2">
           <button id="qd-export-pdf" class="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium px-3.5 py-2 rounded-lg">
-            <i class="fas fa-file-pdf mr-1.5 text-red-500"></i>匯出PDF
+            <i class="fas fa-file-pdf mr-1.5 text-red-500"></i>匯出報價PDF
           </button>
+          ${['approved', 'sent', 'won'].includes(q.status) ? `
+          <button id="qd-export-invoice" class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg">
+            <i class="fas fa-file-invoice mr-1.5"></i>匯出發票PDF
+          </button>` : ''}
           ${canEdit ? `<a href="/quotes/${q.id}/edit" class="bg-white border border-primary-600 text-primary-600 hover:bg-primary-50 text-sm font-medium px-3.5 py-2 rounded-lg">
             <i class="fas fa-pen mr-1.5"></i>編輯
           </a>` : ''}
@@ -275,6 +279,7 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-win', () => runQuoteAction(q.id, 'win', '確定標記此報價單為成交？系統將自動建立訂單。'))
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
+  bind('qd-export-invoice', () => exportInvoicePdf(q))
 }
 
 async function runQuoteAction(id, action, confirmMsg, payload) {
@@ -301,10 +306,24 @@ function runQuoteRejectAction(id) {
 // ============================================================
 // PDF 匯出：以 HTML/CSS 版面 + html2canvas 轉圖 + jsPDF 拼頁
 // （改用瀏覽器原生字型渲染，避免 jsPDF 內建字型不支援中文而產生亂碼）
+// docType: 'quote' 報價單 QUOTATION | 'invoice' 發票 INVOICE（僅已核准/已寄送/已成交狀態可匯出）
 // ============================================================
-function buildQuotePdfHtml(q) {
+function quoteNoToInvoiceNo(quoteNo) {
+  // 報價單號 Q-YYMMDDxxx -> 發票編號 INV-YYMMDDxxx，方便追溯對應報價單
+  return quoteNo.replace(/^Q-/, 'INV-')
+}
+
+function buildQuotePdfHtml(q, docType) {
+  docType = docType || 'quote'
+  const isInvoice = docType === 'invoice'
   const siteAddress = q.site_address || q.customer_address || ''
   const esc = Fmt.escapeHtml
+  const docLabel = isInvoice ? '發票 INVOICE' : '報價單 QUOTATION'
+  const docNo = isInvoice ? quoteNoToInvoiceNo(q.quote_no) : q.quote_no
+  const docNoLabel = isInvoice ? '發票編號：' : '報價單號：'
+  const issueDate = isInvoice ? Fmt.date(new Date().toISOString()) : Fmt.date(q.created_at)
+  const issueDateLabel = isInvoice ? '發票日期：' : '日期：'
+  const footerNote = isInvoice ? COMPANY_INFO.invoiceFooterNote : COMPANY_INFO.footerNote
 
   const itemRows = q.items.map((it, idx) => `
     <tr style="border-bottom:1px solid #f0f0f0;">
@@ -347,7 +366,7 @@ function buildQuotePdfHtml(q) {
           <div style="font-size:13px;color:#6b7280;margin-top:1px;">${esc(COMPANY_INFO.nameZh)}</div>
         </div>
       </div>
-      <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">報價單 QUOTATION</div>
+      <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">${docLabel}</div>
     </div>
 
     <div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5;">
@@ -359,16 +378,18 @@ function buildQuotePdfHtml(q) {
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:12px;">
-      <div><span style="font-weight:700;">報價單號：</span>${esc(q.quote_no)}</div>
-      <div><span style="font-weight:700;">日期：</span>${Fmt.date(q.created_at)}</div>
-      <div><span style="font-weight:700;">有效期限：</span>${Fmt.date(q.valid_until)}</div>
+      <div><span style="font-weight:700;">${docNoLabel}</span>${esc(docNo)}</div>
+      <div><span style="font-weight:700;">${issueDateLabel}</span>${issueDate}</div>
+      ${isInvoice
+        ? `<div><span style="font-weight:700;">對應報價單號：</span>${esc(q.quote_no)}</div>`
+        : `<div><span style="font-weight:700;">有效期限：</span>${Fmt.date(q.valid_until)}</div>`}
       <div><span style="font-weight:700;">客戶：</span>${esc(q.company_name)}</div>
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">工程地址：</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:#1f5b45;color:#fff;">
+        <tr style="background:${isInvoice ? '#7a5a3a' : '#1f5b45'};color:#fff;">
           <th style="padding:7px 4px;text-align:left;font-weight:600;width:24px;">No.</th>
           <th style="padding:7px 4px;text-align:left;font-weight:600;">項目說明</th>
           <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">數量</th>
@@ -403,28 +424,28 @@ function buildQuotePdfHtml(q) {
     ${termsBlock}
 
     <div style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
-      ${esc(COMPANY_INFO.footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
+      ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
     </div>
   </div>`
 }
 
-async function exportQuotePdf(q) {
+// 共用的 HTML -> PDF 產生流程（報價單／發票共用，僅版面內容與檔名不同）
+async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
   if (!window.jspdf || !window.html2canvas) {
     showToast('PDF 匯出元件載入中，請稍後再試', 'error')
     return
   }
-  const btn = document.getElementById('qd-export-pdf')
   const originalHtml = btn ? btn.innerHTML : ''
   if (btn) {
     btn.disabled = true
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i>匯出中...'
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1.5"></i>${busyLabel || '匯出中...'}`
   }
 
   const container = document.createElement('div')
   container.style.position = 'fixed'
   container.style.left = '-9999px'
   container.style.top = '0'
-  container.innerHTML = buildQuotePdfHtml(q)
+  container.innerHTML = html
   document.body.appendChild(container)
 
   try {
@@ -454,7 +475,7 @@ async function exportQuotePdf(q) {
       heightLeft -= pdfHeight
     }
 
-    pdf.save(`${q.quote_no}.pdf`)
+    pdf.save(fileName)
   } catch (err) {
     console.error(err)
     showToast('PDF 匯出失敗，請稍後再試', 'error')
@@ -465,4 +486,14 @@ async function exportQuotePdf(q) {
       btn.innerHTML = originalHtml
     }
   }
+}
+
+async function exportQuotePdf(q) {
+  const btn = document.getElementById('qd-export-pdf')
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), `${q.quote_no}.pdf`, btn, '匯出中...')
+}
+
+async function exportInvoicePdf(q) {
+  const btn = document.getElementById('qd-export-invoice')
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice'), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
 }
