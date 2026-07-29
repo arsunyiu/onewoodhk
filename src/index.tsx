@@ -13,6 +13,7 @@ import userRoutes from './routes/users'
 import reportRoutes from './routes/reports'
 import financeRoutes from './routes/finance'
 import accountingRoutes from './routes/accounting'
+import projectRoutes from './routes/projects'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -30,6 +31,7 @@ app.route('/api/users', userRoutes)
 app.route('/api/reports', reportRoutes)
 app.route('/api/finance', financeRoutes)
 app.route('/api/accounting', accountingRoutes)
+app.route('/api/projects', projectRoutes)
 
 // ---- Page Shell (SPA-like, 由前端 JS 依路徑渲染對應內容) ----
 function pageShell(title: string) {
@@ -82,6 +84,7 @@ function pageShell(title: string) {
   <script src="/static/pages/orders.js"></script>
   <script src="/static/pages/finance.js"></script>
   <script src="/static/pages/accounting.js"></script>
+  <script src="/static/pages/projects.js"></script>
   <script src="/static/pages/users.js"></script>
   <script src="/static/pages/roles.js"></script>
   <script src="/static/pages/reports.js"></script>
@@ -94,7 +97,7 @@ function pageShell(title: string) {
 
 // 所有前端頁面路由都回傳同一個 shell，由 main.js 依路徑渲染畫面
 const pageRoutes = ['/', '/login', '/customers', '/customers/new', '/customers/:id', '/customers/:id/edit',
-  '/quotes', '/quotes/new', '/quotes/:id', '/quotes/:id/edit', '/products', '/orders', '/finance', '/finance/:id', '/accounting', '/users', '/roles', '/reports', '/settings/profile']
+  '/quotes', '/quotes/new', '/quotes/:id', '/quotes/:id/edit', '/products', '/orders', '/finance', '/finance/:id', '/accounting', '/projects', '/projects/:id', '/users', '/roles', '/reports', '/settings/profile']
 
 for (const route of pageRoutes) {
   app.get(route, (c) => c.html(pageShell('一木工程')))

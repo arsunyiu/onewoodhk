@@ -405,6 +405,15 @@ quotes.post('/:id/win', async (c) => {
     .run()
 
   const order = await c.env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(orderResult.meta.last_row_id).first()
+
+  // 訂單成交後自動建立對應工程紀錄（預設負責人為訂單負責業務）
+  await c.env.DB.prepare(
+    `INSERT INTO projects (order_id, status, progress_percent, site_address, supervisor_id)
+     VALUES (?, 'not_started', 0, ?, ?)`
+  )
+    .bind(orderResult.meta.last_row_id, existing.site_address || null, existing.owner_id)
+    .run()
+
   return ok(c, { id, status: 'won', order })
 })
 
