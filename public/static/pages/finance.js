@@ -2,8 +2,21 @@
 // 財務頁面：追蹤「成交訂單」的收款狀況
 // - 列表頁：/finance（訂單收款總覽，含已收/未收/付款狀態）
 // - 詳情頁：/finance/:id（單筆訂單收款紀錄 + 登記收款）
+// 權限：admin / manager 可用（後端已限制，sidebar 也僅對此角色顯示）
 // ============================================================
 window.Pages = window.Pages || {}
+
+function financeAccessDenied() {
+  setMainContent(`
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4">
+        <i class="fas fa-lock text-2xl"></i>
+      </div>
+      <h1 class="text-lg font-bold text-gray-800 mb-1">權限不足</h1>
+      <p class="text-sm text-gray-400 max-w-sm">財務管理頁面僅限管理員與主管存取。</p>
+      <a href="/" class="mt-6 text-primary-600 text-sm hover:underline">回首頁總覽</a>
+    </div>`)
+}
 
 const PAY_STATUS_META = {
   paid: { label: '已付清', color: 'bg-green-100 text-green-700' },
@@ -22,6 +35,12 @@ const FinanceListState = { page: 1, pageSize: 20 }
 
 Pages.finance = async function () {
   mountLayout('finance')
+
+  if (!Auth.isManagerUp()) {
+    financeAccessDenied()
+    return
+  }
+
   setMainContent(`
     <div class="flex items-center justify-between mb-5">
       <div>
@@ -156,6 +175,12 @@ let FinanceDetailOrderId = null
 Pages.financeDetail = async function (orderId) {
   FinanceDetailOrderId = orderId
   mountLayout('finance')
+
+  if (!Auth.isManagerUp()) {
+    financeAccessDenied()
+    return
+  }
+
   setMainContent(`
     <div class="mb-5">
       <a href="/finance" class="text-sm text-gray-500 hover:text-primary-600"><i class="fas fa-arrow-left mr-1"></i> 返回財務列表</a>

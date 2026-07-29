@@ -16,7 +16,7 @@
 - **角色管理**：前端新增**角色管理頁**(`/roles`，admin only)：權限矩陣表(6大模組×3角色)、團隊組織圖(依manager_id分組)、快速編輯(重用使用者管理頁的Modal)
 - **個人資料設定**：`PUT /api/auth/me` 自助更新姓名/電話/大頭貼、密碼變更(需驗證舊密碼)，前端**個人資料頁**(`/settings/profile`，所有登入者可用)
 - **報表分析**：新增 `GET /api/reports/summary?range=` 統計 API(依角色資料範圍過濾)，前端已完成**報表分析頁**：期間篩選(近30/90/180/365天/全部)、KPI總覽卡(期間報價數/成交金額/成交轉換率/平均成交金額)、近6個月報價建立量vs成交金額趨勢圖(Chart.js雙軸長條+線圖)、Pipeline即時狀態分布甜甜圈圖、業務業績排行表(依成交金額排序，含排名徽章與進度條)、客戶貢獻排行Top10(依累計成交金額，可點擊追溯客戶詳情)
-- **財務管理(訂單收款追蹤)**：新增 `order_payments` 表記錄成交訂單的收款，前端**財務頁**(`/finance`，依角色資料範圍過濾)：訂單收款總覽(訂單金額/已收金額/未收餘額/付款狀態)、**訂單收款詳情頁**(`/finance/:id`，收款紀錄列表 + manager/admin可登記新收款/刪除收款)
+- **財務管理(訂單收款追蹤)**：新增 `order_payments` 表記錄成交訂單的收款，前端**財務頁**(`/finance`，**僅admin/manager可用**，manager依團隊範圍過濾)：訂單收款總覽(訂單金額/已收金額/未收餘額/付款狀態)、**訂單收款詳情頁**(`/finance/:id`，收款紀錄列表 + manager/admin可登記新收款/刪除收款)。sales角色無法存取此模組(側邊選單不顯示、直接輸入網址會顯示權限不足頁面、後端API回傳403)
 - **會計管理(公司出入帳)**：新增 `accounting_entries` 表記錄公司整體收入/支出(含工程支出、人工、材料採購等分類)，前端**會計頁**(`/accounting`，僅admin/manager可用)：收支總覽卡(近一年總收入/總支出/淨利)、近6個月收支趨勢圖(Chart.js)、分類統計、出入帳列表(可篩選類型/分類、新增/編輯/admin可刪除)
 - **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者/會計的新增編輯表單共用
 - **角色權限與資料範圍控制**：
@@ -52,9 +52,9 @@
 | POST/PUT | /api/users | 新增/編輯使用者 | admin |
 | GET | /api/reports/summary | 報表統計摘要 `?range=30d\|90d\|180d\|365d\|all`（KPI/Pipeline快照/6個月趨勢/業務排行/客戶排行) | 需登入(依角色範圍) |
 | PUT | /api/auth/me | 自助更新個人資料(姓名/電話/大頭貼)、變更密碼(需驗證舊密碼) | 需登入 |
-| GET | /api/finance/summary | 訂單收款總覽(應收/已收/未收) | 需登入(依角色範圍) |
-| GET | /api/finance/orders | 訂單收款列表(含已收金額/未收餘額/付款狀態) `?page=&page_size=` | 需登入(依角色範圍) |
-| GET | /api/finance/orders/:id | 單筆訂單收款詳情(含收款紀錄) | 需登入(依角色範圍) |
+| GET | /api/finance/summary | 訂單收款總覽(應收/已收/未收) | manager/admin |
+| GET | /api/finance/orders | 訂單收款列表(含已收金額/未收餘額/付款狀態) `?page=&page_size=` | manager/admin |
+| GET | /api/finance/orders/:id | 單筆訂單收款詳情(含收款紀錄) | manager/admin |
 | POST | /api/finance/orders/:id/payments | 登記收款 | manager/admin |
 | DELETE | /api/finance/payments/:id | 刪除收款紀錄 | admin |
 | GET | /api/accounting/categories | 收入/支出分類選項 | manager/admin |
@@ -155,8 +155,8 @@
 /quotes/:id/edit        編輯報價 ✅（draft/rejected可編輯，重用建立頁表單）
 /products               產品目錄 ✅（搜尋/分類/上架狀態篩選，manager+可新增/編輯/下架）
 /orders                 成交訂單 ✅（唯讀列表，可點擊追溯來源報價）
-/finance                財務(訂單收款總覽) ✅（依角色資料範圍過濾，訂單金額/已收/未收/付款狀態）
-/finance/:id             訂單收款詳情 ✅（收款紀錄列表，manager/admin可登記/刪除收款）
+/finance                財務(訂單收款總覽) ✅（admin/manager only，非manager以上訪問顯示權限不足，manager依團隊範圍過濾）
+/finance/:id             訂單收款詳情 ✅（admin/manager only，收款紀錄列表，可登記/刪除收款）
 /accounting              會計(公司出入帳) ✅（admin/manager only，收支總覽/趨勢圖/分類統計/新增編輯刪除）
 /users                  使用者管理 ✅（admin only，含新增/編輯，非admin訪問顯示權限不足）
 /roles                  角色管理 ✅（admin only，權限矩陣/團隊組織圖/快速編輯，非admin訪問顯示權限不足）

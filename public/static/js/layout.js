@@ -7,14 +7,14 @@ function renderLayout(activeKey) {
     { key: 'dashboard', href: '/', icon: 'fa-gauge-high', label: '首頁總覽' },
     { key: 'customers', href: '/customers', icon: 'fa-building-user', label: '客戶管理' },
     { key: 'quotes', href: '/quotes', icon: 'fa-file-invoice-dollar', label: '報價管理' },
-    { key: 'orders', href: '/orders', icon: 'fa-cart-shopping', label: '成交訂單' },
-    { key: 'finance', href: '/finance', icon: 'fa-hand-holding-dollar', label: '財務管理' },
-    { key: 'products', href: '/products', icon: 'fa-boxes-stacked', label: '產品目錄' },
-    { key: 'reports', href: '/reports', icon: 'fa-chart-line', label: '報表分析' }
+    { key: 'orders', href: '/orders', icon: 'fa-cart-shopping', label: '成交訂單' }
   ]
   if (Auth.isManagerUp()) {
+    menus.push({ key: 'finance', href: '/finance', icon: 'fa-hand-holding-dollar', label: '財務管理' })
     menus.push({ key: 'accounting', href: '/accounting', icon: 'fa-book', label: '會計管理' })
   }
+  menus.push({ key: 'products', href: '/products', icon: 'fa-boxes-stacked', label: '產品目錄' })
+  menus.push({ key: 'reports', href: '/reports', icon: 'fa-chart-line', label: '報表分析' })
   if (Auth.isAdmin()) {
     menus.push({ key: 'users', href: '/users', icon: 'fa-users-gear', label: '使用者管理' })
     menus.push({ key: 'roles', href: '/roles', icon: 'fa-user-shield', label: '角色管理' })

@@ -1,7 +1,7 @@
 // ============================================================
 // 財務模組：追蹤「成交訂單」(orders) 的收款紀錄
-// 權限：所有登入者可依角色範圍查看訂單收款狀況；
-//       登記/刪除收款僅限 admin / manager（sales 僅可查看自己名下訂單）
+// 權限：整個模組僅限 admin / manager 使用（sales 完全無法存取）；
+//       manager 僅能查看/操作自己團隊範圍內的訂單，admin 可查看全部
 // ============================================================
 import { Hono } from 'hono'
 import type { Bindings, JwtPayload } from '../types'
@@ -11,6 +11,7 @@ import { getVisibleOwnerIds, ownerScopeClause } from '../utils/scope'
 
 const finance = new Hono<{ Bindings: Bindings }>()
 finance.use('*', authMiddleware)
+finance.use('*', requireRole('admin', 'manager'))
 
 function payStatusOf(totalAmount: number, paidAmount: number): 'unpaid' | 'partial' | 'paid' {
   if (totalAmount > 0 && paidAmount >= totalAmount) return 'paid'
