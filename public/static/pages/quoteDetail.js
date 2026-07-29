@@ -416,8 +416,10 @@ function buildQuotePdfHtml(q, docType) {
 
     <div style="margin-top:22px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
-      <div style="font-size:11px;color:#4b5563;">
-        Bank: ${esc(COMPANY_INFO.bank.name)}　Account No.: ${esc(COMPANY_INFO.bank.accountNo)}　Name: ${esc(COMPANY_INFO.bank.accountName)}
+      <div style="font-size:11px;color:#4b5563;line-height:1.6;">
+        <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
+        <div>Account No.: ${esc(COMPANY_INFO.bank.accountNo)}</div>
+        <div>Name: ${esc(COMPANY_INFO.bank.accountName)}</div>
       </div>
     </div>
 
