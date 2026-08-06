@@ -373,8 +373,8 @@ function buildQuotePdfHtml(q, docType) {
   const itemGroups = groupQuoteItemsByCategory(q.items)
   let runningIdx = 0
   const headerColor = isInvoice ? '#7a5a3a' : '#1f5b45'
-  // 表格欄位標題（位置/說明等）改用深灰色，避免與分類色帶（headerColor）顏色太相近而視覺上黏在一起
-  const tableHeadColor = '#374151'
+  // 表格欄位標題（位置/說明等）改為金色，與 Logo 的金色一致
+  const tableHeadColor = '#b8935a'
   const itemRows = itemGroups.map((group) => {
     const rows = group.items.map((it) => {
       runningIdx += 1
@@ -391,7 +391,7 @@ function buildQuotePdfHtml(q, docType) {
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
+      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};text-align:center;">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
@@ -451,14 +451,14 @@ function buildQuotePdfHtml(q, docType) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:7px 4px;text-align:left;font-weight:600;width:22px;">No.</th>
-          <th style="padding:7px 4px;text-align:left;font-weight:600;width:70px;">位置</th>
-          <th style="padding:7px 4px;text-align:left;font-weight:600;">說明</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">數量</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">單位</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:60px;">單價</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:72px;">小計</th>
+        <tr style="background:${tableHeadColor};color:#2b2110;">
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:22px;">No.</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:70px;">位置</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;">說明</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:40px;">數量</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:40px;">單位</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:60px;">單價</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:600;width:72px;">小計</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
@@ -604,6 +604,15 @@ async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
       if (idx > 0) pdf.addPage()
       pdf.addImage(sliceImgData, 'PNG', 0, topMarginMm, imgWidthMm, sliceHeightMm)
     })
+
+    // 每頁底部置中加上頁碼 X/X
+    const totalPages = pdf.internal.getNumberOfPages()
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      pdf.setPage(pageNum)
+      pdf.setFontSize(9)
+      pdf.setTextColor(150, 150, 150)
+      pdf.text(`${pageNum} / ${totalPages}`, pdfWidthMm / 2, pdfHeightMm - 5, { align: 'center' })
+    }
 
     pdf.save(fileName)
   } catch (err) {
