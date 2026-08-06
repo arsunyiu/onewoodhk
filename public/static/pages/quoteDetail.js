@@ -25,6 +25,24 @@ const ACTION_ICONS = {
 
 let QuoteDetailData = null
 
+// 依「工程分類」將報價/發票項目分組，並計算各組小計（順序依 PRODUCT_CATEGORIES 排列，
+// 未填分類的項目歸入「其他項目」置於最後），供頁面預覽及 PDF 匯出共用同一分組邏輯
+function groupQuoteItemsByCategory(items) {
+  const order = (typeof PRODUCT_CATEGORIES !== 'undefined' ? PRODUCT_CATEGORIES : [])
+  const groupMap = new Map()
+  items.forEach((it) => {
+    const key = (it.category && it.category.trim()) || '其他項目'
+    if (!groupMap.has(key)) groupMap.set(key, [])
+    groupMap.get(key).push(it)
+  })
+  const orderedKeys = [...order.filter((c) => groupMap.has(c)), ...[...groupMap.keys()].filter((k) => !order.includes(k))]
+  return orderedKeys.map((category) => {
+    const groupItems = groupMap.get(category)
+    const subtotal = groupItems.reduce((sum, it) => sum + Number(it.line_total || 0), 0)
+    return { category, items: groupItems, subtotal }
+  })
+}
+
 Pages.quoteDetail = async function (id) {
   mountLayout('quotes')
   setMainContent(`
@@ -114,6 +132,7 @@ function renderQuoteDetail(q) {
                 <thead>
                   <tr class="text-left text-gray-400 border-b border-gray-100">
                     <th class="py-2 font-medium w-8">#</th>
+                    <th class="py-2 font-medium w-20">位置</th>
                     <th class="py-2 font-medium">項目</th>
                     <th class="py-2 font-medium text-right w-16">數量</th>
                     <th class="py-2 font-medium text-right w-16">單位</th>
@@ -123,9 +142,18 @@ function renderQuoteDetail(q) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${q.items.map((it, idx) => `
+                  ${(() => {
+                    let seqIdx = 0
+                    return groupQuoteItemsByCategory(q.items).map((group) => `
+                  <tr class="bg-gray-50">
+                    <td colspan="8" class="py-2 px-1 font-semibold text-gray-700 text-xs">${Fmt.escapeHtml(group.category)}</td>
+                  </tr>
+                  ${group.items.map((it) => {
+                    seqIdx += 1
+                    return `
                   <tr class="border-b border-gray-50">
-                    <td class="py-2.5 text-gray-400">${idx + 1}</td>
+                    <td class="py-2.5 text-gray-400">${seqIdx}</td>
+                    <td class="py-2.5 text-gray-600 text-xs">${Fmt.escapeHtml(it.location || '-')}</td>
                     <td class="py-2.5">
                       <p class="text-gray-800">${Fmt.escapeHtml(it.item_name)}</p>
                       ${it.description ? `<p class="text-xs text-gray-400">${Fmt.escapeHtml(it.description)}</p>` : ''}
@@ -135,7 +163,12 @@ function renderQuoteDetail(q) {
                     <td class="py-2.5 text-right text-gray-600">${Number(it.unit_price).toLocaleString()}</td>
                     <td class="py-2.5 text-right text-gray-600">${it.discount_pct ? it.discount_pct + '%' : '-'}</td>
                     <td class="py-2.5 text-right font-medium text-gray-800">${Number(it.line_total).toLocaleString()}</td>
-                  </tr>`).join('')}
+                  </tr>`}).join('')}
+                  <tr class="border-b border-gray-100">
+                    <td colspan="7" class="py-1.5 px-1 text-right text-xs text-gray-500">Sub-total 小計</td>
+                    <td class="py-1.5 text-right text-xs font-semibold text-gray-700">${group.subtotal.toLocaleString()}</td>
+                  </tr>`).join('')
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -325,18 +358,35 @@ function buildQuotePdfHtml(q, docType) {
   const issueDateLabel = isInvoice ? '發票日期：' : '日期：'
   const footerNote = isInvoice ? COMPANY_INFO.invoiceFooterNote : COMPANY_INFO.footerNote
 
-  const itemRows = q.items.map((it, idx) => `
+  // 按工程分類分組，每組顯示分類標題列，項目列拆分 Location / Description 兩欄，
+  // 每組結尾顯示 Sub-total，仿照原始報價單 (QW260801-R0.pdf) 版面效果
+  const itemGroups = groupQuoteItemsByCategory(q.items)
+  let runningIdx = 0
+  const headerColor = isInvoice ? '#7a5a3a' : '#1f5b45'
+  const itemRows = itemGroups.map((group) => {
+    const rows = group.items.map((it) => {
+      runningIdx += 1
+      return `
     <tr style="border-bottom:1px solid #f0f0f0;">
-      <td style="padding:7px 4px;color:#9ca3af;">${idx + 1}</td>
-      <td style="padding:7px 4px;">
-        <div style="color:#1f2937;">${esc(it.item_name)}</div>
-        ${it.description ? `<div style="font-size:10px;color:#9ca3af;margin-top:2px;">${esc(it.description)}</div>` : ''}
-      </td>
-      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
-      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${esc(it.unit)}</td>
-      <td style="padding:7px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
-      <td style="padding:7px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
-    </tr>`).join('')
+      <td style="padding:6px 4px;color:#9ca3af;">${runningIdx}</td>
+      <td style="padding:6px 4px;color:#4b5563;">${esc(it.location || '-')}</td>
+      <td style="padding:6px 4px;color:#1f2937;">${esc(it.item_name)}${it.description ? `<div style="font-size:10px;color:#9ca3af;margin-top:1px;">${esc(it.description)}</div>` : ''}</td>
+      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
+      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${esc(it.unit)}</td>
+      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
+      <td style="padding:6px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
+    </tr>`
+    }).join('')
+    return `
+    <tr>
+      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(group.category)}</td>
+    </tr>
+    ${rows}
+    <tr style="border-bottom:1px solid #e5e7eb;">
+      <td colspan="6" style="padding:5px 4px;text-align:right;font-size:10px;color:#6b7280;">Sub-total 小計</td>
+      <td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:700;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
+    </tr>`
+  }).join('')
 
   const discountRow = q.discount_value ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
@@ -389,13 +439,14 @@ function buildQuotePdfHtml(q, docType) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:${isInvoice ? '#7a5a3a' : '#1f5b45'};color:#fff;">
-          <th style="padding:7px 4px;text-align:left;font-weight:600;width:24px;">No.</th>
-          <th style="padding:7px 4px;text-align:left;font-weight:600;">項目說明</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">數量</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:44px;">單位</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:64px;">單價</th>
-          <th style="padding:7px 4px;text-align:right;font-weight:600;width:76px;">小計</th>
+        <tr style="background:${headerColor};color:#fff;">
+          <th style="padding:7px 4px;text-align:left;font-weight:600;width:22px;">No.</th>
+          <th style="padding:7px 4px;text-align:left;font-weight:600;width:70px;">Location<br/>位置</th>
+          <th style="padding:7px 4px;text-align:left;font-weight:600;">Description<br/>說明</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">數量</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">單位</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:60px;">單價</th>
+          <th style="padding:7px 4px;text-align:right;font-weight:600;width:72px;">小計</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>

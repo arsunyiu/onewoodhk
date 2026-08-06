@@ -156,8 +156,8 @@ quotes.post('/', async (c) => {
   for (let i = 0; i < items.length; i++) {
     const it = items[i]
     await c.env.DB.prepare(
-      `INSERT INTO quote_items (quote_id, product_id, item_name, description, unit, quantity, unit_price, discount_pct, line_total, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO quote_items (quote_id, product_id, item_name, description, unit, quantity, unit_price, discount_pct, line_total, sort_order, category, location)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         quoteId,
@@ -169,7 +169,9 @@ quotes.post('/', async (c) => {
         it.unit_price,
         it.discount_pct || 0,
         it.line_total,
-        i
+        i,
+        it.category || null,
+        it.location || null
       )
       .run()
   }
@@ -254,10 +256,10 @@ quotes.put('/:id', async (c) => {
     for (let i = 0; i < items.length; i++) {
       const it = items[i]
       await c.env.DB.prepare(
-        `INSERT INTO quote_items (quote_id, product_id, item_name, description, unit, quantity, unit_price, discount_pct, line_total, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO quote_items (quote_id, product_id, item_name, description, unit, quantity, unit_price, discount_pct, line_total, sort_order, category, location)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-        .bind(id, it.product_id || null, it.item_name, it.description || null, it.unit || '件', it.quantity, it.unit_price, it.discount_pct || 0, it.line_total, i)
+        .bind(id, it.product_id || null, it.item_name, it.description || null, it.unit || '件', it.quantity, it.unit_price, it.discount_pct || 0, it.line_total, i, it.category || null, it.location || null)
         .run()
     }
   }

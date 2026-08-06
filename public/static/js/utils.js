@@ -43,6 +43,14 @@ const CustomerStatusMeta = {
   inactive: { label: '停止合作', color: 'bg-gray-200 text-gray-500' }
 }
 
+// 工程分類（依裝修/水電行業常見分法整理；用於產品目錄分類篩選、報價項目分類、PDF分組）
+// 顯示順序即為報價/發票 PDF 分組排列順序
+const PRODUCT_CATEGORIES = [
+  '前期工程', '拆除及清潔工程', '泥水工程', '木器工程', '地板工程',
+  '天花及鋁質工程', '油漆工程', '電力工程', '水喉工程', '防水工程',
+  '窗戶工程', '設備安裝工程'
+]
+
 function statusBadge(meta) {
   return `<span class="px-2 py-1 rounded-full text-xs font-medium ${meta.color}">${meta.label}</span>`
 }

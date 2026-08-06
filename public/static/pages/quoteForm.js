@@ -22,7 +22,7 @@ const QuoteFormState = {
 }
 
 function blankQuoteItem() {
-  return { product_id: null, item_name: '', description: '', unit: '件', quantity: 1, unit_price: 0, discount_pct: 0 }
+  return { product_id: null, item_name: '', description: '', unit: '件', quantity: 1, unit_price: 0, discount_pct: 0, category: '', location: '' }
 }
 
 Pages.quoteForm = async function (id) {
@@ -63,7 +63,9 @@ Pages.quoteForm = async function (id) {
             unit: it.unit || '件',
             quantity: it.quantity,
             unit_price: it.unit_price,
-            discount_pct: it.discount_pct || 0
+            discount_pct: it.discount_pct || 0,
+            category: it.category || '',
+            location: it.location || ''
           }))
         : [blankQuoteItem()]
       if (existing.customer_id) {
@@ -169,6 +171,8 @@ function renderQuoteForm(existing) {
               <thead>
                 <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
                   <th class="px-3 py-2 font-medium min-w-[170px]">產品/項目</th>
+                  <th class="px-3 py-2 font-medium w-28">工程分類</th>
+                  <th class="px-3 py-2 font-medium w-24">Location<br/>位置</th>
                   <th class="px-3 py-2 font-medium min-w-[150px]">說明</th>
                   <th class="px-3 py-2 font-medium w-20">單位</th>
                   <th class="px-3 py-2 font-medium w-20">數量</th>
@@ -270,6 +274,15 @@ function renderQuoteItemsTable() {
           <input class="item-name w-full border border-gray-200 rounded px-2 py-1 text-sm" placeholder="項目名稱" value="${Fmt.escapeHtml(it.item_name)}" ${editable ? '' : 'disabled'} />
         </td>
         <td class="px-3 py-2 align-top">
+          <select class="item-category w-full border border-gray-200 rounded px-2 py-1 text-xs" ${editable ? '' : 'disabled'}>
+            <option value="">未分類</option>
+            ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(c)}</option>`).join('')}
+          </select>
+        </td>
+        <td class="px-3 py-2 align-top">
+          <input class="item-location w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="例：廚房/主人浴室" value="${Fmt.escapeHtml(it.location || '')}" ${editable ? '' : 'disabled'} />
+        </td>
+        <td class="px-3 py-2 align-top">
           <input class="item-desc w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="說明（選填）" value="${Fmt.escapeHtml(it.description || '')}" ${editable ? '' : 'disabled'} />
         </td>
         <td class="px-3 py-2 align-top"><input class="item-unit w-full border border-gray-200 rounded px-2 py-1 text-sm" value="${Fmt.escapeHtml(it.unit)}" ${editable ? '' : 'disabled'} /></td>
@@ -338,10 +351,13 @@ function bindQuoteFormEvents() {
           QuoteFormState.items[idx].unit = p.unit
           QuoteFormState.items[idx].unit_price = p.unit_price
           QuoteFormState.items[idx].description = p.description || ''
+          QuoteFormState.items[idx].category = p.category || ''
         }
       }
       renderQuoteItemsTable()
       recalcQuoteTotals()
+    } else if (e.target.classList.contains('item-category')) {
+      QuoteFormState.items[idx].category = e.target.value
     }
   })
 
@@ -352,6 +368,7 @@ function bindQuoteFormEvents() {
     const item = QuoteFormState.items[idx]
     if (e.target.classList.contains('item-name')) item.item_name = e.target.value
     else if (e.target.classList.contains('item-desc')) item.description = e.target.value
+    else if (e.target.classList.contains('item-location')) item.location = e.target.value
     else if (e.target.classList.contains('item-unit')) item.unit = e.target.value
     else if (e.target.classList.contains('item-qty')) item.quantity = Number(e.target.value)
     else if (e.target.classList.contains('item-price')) item.unit_price = Number(e.target.value)
@@ -431,7 +448,9 @@ async function submitQuoteForm(submitAfter) {
       unit: it.unit || '件',
       quantity: Number(it.quantity) || 0,
       unit_price: Number(it.unit_price) || 0,
-      discount_pct: Number(it.discount_pct) || 0
+      discount_pct: Number(it.discount_pct) || 0,
+      category: it.category ? it.category.trim() : null,
+      location: it.location ? it.location.trim() : null
     }))
 
   if (!items.length) {

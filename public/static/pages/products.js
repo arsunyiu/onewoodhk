@@ -28,8 +28,10 @@ Pages.products = async function () {
           <input id="prod-search" type="text" placeholder="搜尋產品名稱 / SKU..."
             class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
         </div>
-        <input id="prod-category" type="text" placeholder="分類篩選（選填）"
-          class="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none w-48" />
+        <select id="prod-category" class="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none w-48">
+          <option value="">全部分類</option>
+          ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}">${Fmt.escapeHtml(c)}</option>`).join('')}
+        </select>
         <select id="prod-active" class="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none">
           <option value="1" selected>僅顯示上架中</option>
           <option value="">全部（含已下架）</option>
@@ -64,9 +66,12 @@ Pages.products = async function () {
 
   document.getElementById('prod-search-btn').addEventListener('click', () => {
     ProductListState.search = document.getElementById('prod-search').value.trim()
-    ProductListState.category = document.getElementById('prod-category').value.trim()
+    ProductListState.category = document.getElementById('prod-category').value
     ProductListState.is_active = document.getElementById('prod-active').value
     loadProductList()
+  })
+  document.getElementById('prod-category').addEventListener('change', () => {
+    document.getElementById('prod-search-btn').click()
   })
   document.getElementById('prod-search').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('prod-search-btn').click()
@@ -159,7 +164,14 @@ function openProductModal(product) {
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">分類</label>
-            <input id="pm-category" type="text" value="${Fmt.escapeHtml(p.category || '')}" placeholder="例：水電工程 / 裝修工程" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+            <select id="pm-category" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+              <option value="">請選擇分類</option>
+              ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${p.category === c ? 'selected' : ''}>${Fmt.escapeHtml(c)}</option>`).join('')}
+              <option value="__custom__" ${p.category && !PRODUCT_CATEGORIES.includes(p.category) ? 'selected' : ''}>其他（自訂分類）</option>
+            </select>
+            <input id="pm-category-custom" type="text" value="${p.category && !PRODUCT_CATEGORIES.includes(p.category) ? Fmt.escapeHtml(p.category) : ''}"
+              placeholder="輸入自訂分類名稱"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1.5 focus:ring-2 focus:ring-primary-500 outline-none ${p.category && !PRODUCT_CATEGORIES.includes(p.category) ? '' : 'hidden'}" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">單位</label>
@@ -191,16 +203,30 @@ function openProductModal(product) {
     </div>`)
 
   document.getElementById('pm-cancel').addEventListener('click', closeModal)
+  document.getElementById('pm-category').addEventListener('change', (e) => {
+    const customInput = document.getElementById('pm-category-custom')
+    if (e.target.value === '__custom__') {
+      customInput.classList.remove('hidden')
+      customInput.focus()
+    } else {
+      customInput.classList.add('hidden')
+      customInput.value = ''
+    }
+  })
   document.getElementById('pm-submit').addEventListener('click', async () => {
     const name = document.getElementById('pm-name').value.trim()
     if (!name) {
       showToast('請填寫產品名稱', 'error')
       return
     }
+    const categorySelectVal = document.getElementById('pm-category').value
+    const category = categorySelectVal === '__custom__'
+      ? document.getElementById('pm-category-custom').value.trim()
+      : categorySelectVal
     const payload = {
       name,
       sku: document.getElementById('pm-sku').value.trim() || null,
-      category: document.getElementById('pm-category').value.trim() || null,
+      category: category || null,
       unit: document.getElementById('pm-unit').value.trim() || '件',
       unit_price: Number(document.getElementById('pm-unit-price').value) || 0,
       cost_price: Number(document.getElementById('pm-cost-price').value) || 0,
