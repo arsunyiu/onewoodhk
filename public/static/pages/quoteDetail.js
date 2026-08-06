@@ -128,17 +128,27 @@ function renderQuoteDetail(q) {
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-3">報價明細</h2>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-sm table-fixed">
+                <colgroup>
+                  <col style="width:3%" />
+                  <col style="width:6%" />
+                  <col style="width:70%" />
+                  <col style="width:4%" />
+                  <col style="width:4%" />
+                  <col style="width:6%" />
+                  <col style="width:3%" />
+                  <col style="width:4%" />
+                </colgroup>
                 <thead>
                   <tr class="text-left text-gray-400 border-b border-gray-100">
-                    <th class="py-2 font-medium w-8">#</th>
-                    <th class="py-2 font-medium w-20">位置</th>
+                    <th class="py-2 font-medium">#</th>
+                    <th class="py-2 font-medium">位置</th>
                     <th class="py-2 font-medium">項目</th>
-                    <th class="py-2 font-medium text-right w-16">數量</th>
-                    <th class="py-2 font-medium text-right w-16">單位</th>
-                    <th class="py-2 font-medium text-right w-24">單價</th>
-                    <th class="py-2 font-medium text-right w-16">折扣</th>
-                    <th class="py-2 font-medium text-right w-28">小計</th>
+                    <th class="py-2 font-medium text-right">數量</th>
+                    <th class="py-2 font-medium text-right">單位</th>
+                    <th class="py-2 font-medium text-right">單價</th>
+                    <th class="py-2 font-medium text-right">折扣</th>
+                    <th class="py-2 font-medium text-right">小計</th>
                   </tr>
                 </thead>
                 <tbody>
