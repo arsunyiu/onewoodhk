@@ -22,7 +22,7 @@ const QuoteFormState = {
 }
 
 function blankQuoteItem() {
-  return { product_id: null, item_name: '', description: '', unit: '件', quantity: 1, unit_price: 0, discount_pct: 0, category: '', location: '' }
+  return { product_id: null, item_name: '', description: '', unit: '件', quantity: 1, unit_price: 0, discount_pct: 0, category: '', location: '', line_total: 0 }
 }
 
 Pages.quoteForm = async function (id) {
@@ -66,7 +66,9 @@ Pages.quoteForm = async function (id) {
             unit_price: it.unit_price,
             discount_pct: it.discount_pct || 0,
             category: it.category || '',
-            location: it.location || ''
+            location: it.location || '',
+            // 小計採用資料庫已存值（可能為使用者先前手動調整過的金額，非單純數量*單價*(1-折扣%)）
+            line_total: it.line_total != null ? Number(it.line_total) : calcQuoteLineTotal(it)
           }))
         : [blankQuoteItem()]
       if (existing.customer_id) {
@@ -263,7 +265,8 @@ function renderQuoteItemsTable() {
 
   tbody.innerHTML = QuoteFormState.items
     .map((it, idx) => {
-      const lineTotal = calcQuoteLineTotal(it)
+      // 小計預設為 數量*單價*(1-折扣%) 自動計算，但可由使用者手動覆寫（例如整批工程報價需微調金額）
+      const lineTotal = it.line_total != null ? Number(it.line_total) : calcQuoteLineTotal(it)
       const editable = QuoteFormState.editable
       // 依此列目前選擇的工程分類，過濾產品下拉選單只顯示該分類下的產品；未選分類前產品選單停用，強制先選分類
       const filteredProducts = it.category
@@ -295,7 +298,9 @@ function renderQuoteItemsTable() {
         <td class="px-3 py-2 align-top"><input type="number" min="0" step="0.01" class="item-qty w-full border border-gray-200 rounded px-2 py-1 text-sm text-right" value="${it.quantity}" ${editable ? '' : 'disabled'} /></td>
         <td class="px-3 py-2 align-top"><input type="number" min="0" step="0.01" class="item-price w-full border border-gray-200 rounded px-2 py-1 text-sm text-right" value="${it.unit_price}" ${editable ? '' : 'disabled'} /></td>
         <td class="px-3 py-2 align-top"><input type="number" min="0" max="100" step="0.01" class="item-discount w-full border border-gray-200 rounded px-2 py-1 text-sm text-right" value="${it.discount_pct || 0}" ${editable ? '' : 'disabled'} /></td>
-        <td class="px-3 py-2 align-top text-right font-medium text-gray-700 item-line-total">${lineTotal.toLocaleString()}</td>
+        <td class="px-3 py-2 align-top">
+          <input type="number" min="0" step="0.01" class="item-line-total w-full border border-gray-200 rounded px-2 py-1 text-sm text-right font-medium text-gray-700" value="${lineTotal}" title="預設為 數量×單價×(1-折扣%)，可手動修改覆寫" ${editable ? '' : 'disabled'} />
+        </td>
         <td class="px-3 py-2 align-top text-center">
           ${editable ? `<button class="item-remove text-gray-400 hover:text-red-500" title="刪除項目"><i class="fas fa-trash"></i></button>` : ''}
         </td>
@@ -364,6 +369,8 @@ function bindQuoteFormEvents() {
           QuoteFormState.items[idx].unit_price = p.unit_price
           QuoteFormState.items[idx].description = p.description || ''
           // 分類已由使用者於「工程分類」欄位選定，此處不再由產品覆寫
+          // 選定產品後帶入其單價，小計依公式重新計算（尚未手動調整過，採自動值）
+          QuoteFormState.items[idx].line_total = calcQuoteLineTotal(QuoteFormState.items[idx])
         }
       }
       renderQuoteItemsTable()
@@ -380,12 +387,19 @@ function bindQuoteFormEvents() {
     else if (e.target.classList.contains('item-desc')) item.description = e.target.value
     else if (e.target.classList.contains('item-location')) item.location = e.target.value
     else if (e.target.classList.contains('item-unit')) item.unit = e.target.value
-    else if (e.target.classList.contains('item-qty')) item.quantity = Number(e.target.value)
+    else if (e.target.classList.contains('item-line-total')) {
+      // 使用者手動修改小計：直接採用輸入值覆寫，不再由數量/單價/折扣重新計算
+      item.line_total = Number(e.target.value) || 0
+      recalcQuoteTotals()
+      return
+    } else if (e.target.classList.contains('item-qty')) item.quantity = Number(e.target.value)
     else if (e.target.classList.contains('item-price')) item.unit_price = Number(e.target.value)
     else if (e.target.classList.contains('item-discount')) item.discount_pct = Number(e.target.value)
     else return
+    // 數量/單價/折扣變動時，自動依公式重新計算小計（若使用者先前手動覆寫過小計，此處視為以最新輸入的公式結果為準）
+    item.line_total = calcQuoteLineTotal(item)
     const cell = row.querySelector('.item-line-total')
-    if (cell) cell.textContent = calcQuoteLineTotal(item).toLocaleString()
+    if (cell) cell.value = item.line_total
     recalcQuoteTotals()
   })
 
@@ -425,7 +439,8 @@ function recalcQuoteTotals() {
   const taxRate = isNaN(taxRateRaw) ? 0 : taxRateRaw
   const currency = document.getElementById('qf-currency')?.value || 'HKD'
 
-  const subtotal = QuoteFormState.items.reduce((sum, it) => sum + calcQuoteLineTotal(it), 0)
+  // 未稅小計＝各項目小計加總；小計若曾被使用者手動修改，以該手動值為準（非重新用公式計算）
+  const subtotal = QuoteFormState.items.reduce((sum, it) => sum + (Number(it.line_total) || 0), 0)
   let afterDiscount = discountType === 'percent' ? subtotal * (1 - discountValue / 100) : subtotal - discountValue
   afterDiscount = Math.max(0, afterDiscount)
   const taxAmount = Math.round(afterDiscount * taxRate * 100) / 100
@@ -460,7 +475,9 @@ async function submitQuoteForm(submitAfter) {
       unit_price: Number(it.unit_price) || 0,
       discount_pct: Number(it.discount_pct) || 0,
       category: it.category ? it.category.trim() : null,
-      location: it.location ? it.location.trim() : null
+      location: it.location ? it.location.trim() : null,
+      // 小計可能已被使用者手動覆寫，直接帶出目前顯示的值供後端採用（後端不再無條件用公式覆蓋）
+      line_total: Number(it.line_total) || 0
     }))
 
   if (!items.length) {

@@ -31,7 +31,12 @@ async function generateQuoteNo(db: D1Database): Promise<string> {
 
 function calcTotals(items: any[], discountType: string, discountValue: number, taxRate: number) {
   const subtotal = items.reduce((sum, it) => {
-    const lineTotal = it.quantity * it.unit_price * (1 - (it.discount_pct || 0) / 100)
+    // 小計：優先採用前端傳來的值（使用者可能已手動調整覆寫），
+    // 只有在未提供或非有效數值時才回退用「數量*單價*(1-折扣%)」公式自動計算
+    const provided = Number(it.line_total)
+    const lineTotal = Number.isFinite(provided) && it.line_total !== null && it.line_total !== undefined
+      ? provided
+      : it.quantity * it.unit_price * (1 - (it.discount_pct || 0) / 100)
     it.line_total = Math.round(lineTotal * 100) / 100
     return sum + it.line_total
   }, 0)
