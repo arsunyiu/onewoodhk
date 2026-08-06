@@ -171,8 +171,8 @@ function renderQuoteForm(existing) {
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-                  <th class="px-3 py-2 font-medium min-w-[170px]">產品/項目</th>
                   <th class="px-3 py-2 font-medium w-28">工程分類</th>
+                  <th class="px-3 py-2 font-medium min-w-[170px]">產品/項目</th>
                   <th class="px-3 py-2 font-medium w-24">Location<br/>位置</th>
                   <th class="px-3 py-2 font-medium min-w-[150px]">說明</th>
                   <th class="px-3 py-2 font-medium w-20">單位</th>
@@ -265,20 +265,25 @@ function renderQuoteItemsTable() {
     .map((it, idx) => {
       const lineTotal = calcQuoteLineTotal(it)
       const editable = QuoteFormState.editable
+      // 依此列目前選擇的工程分類，過濾產品下拉選單只顯示該分類下的產品；未選分類前產品選單停用，強制先選分類
+      const filteredProducts = it.category
+        ? QuoteFormState.products.filter((p) => p.category === it.category)
+        : []
+      const productSelectDisabled = !editable || !it.category
       return `
       <tr class="item-row border-b border-gray-50" data-idx="${idx}">
         <td class="px-3 py-2 align-top">
-          <select class="item-product w-full border border-gray-200 rounded px-2 py-1 text-xs mb-1" ${editable ? '' : 'disabled'}>
-            <option value="">自訂項目</option>
-            ${QuoteFormState.products.map((p) => `<option value="${p.id}" ${it.product_id === p.id ? 'selected' : ''}>${p.product_code ? '[' + Fmt.escapeHtml(p.product_code) + '] ' : ''}${Fmt.escapeHtml(p.name)}</option>`).join('')}
-          </select>
-          <input class="item-name w-full border border-gray-200 rounded px-2 py-1 text-sm" placeholder="項目名稱" value="${Fmt.escapeHtml(it.item_name)}" ${editable ? '' : 'disabled'} />
-        </td>
-        <td class="px-3 py-2 align-top">
           <select class="item-category w-full border border-gray-200 rounded px-2 py-1 text-xs" ${editable ? '' : 'disabled'}>
-            <option value="">未分類</option>
+            <option value="">請先選擇分類</option>
             ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
           </select>
+        </td>
+        <td class="px-3 py-2 align-top">
+          <select class="item-product w-full border border-gray-200 rounded px-2 py-1 text-xs mb-1" ${productSelectDisabled ? 'disabled' : ''}>
+            <option value="">${it.category ? '自訂項目' : '請先選擇分類'}</option>
+            ${filteredProducts.map((p) => `<option value="${p.id}" ${it.product_id === p.id ? 'selected' : ''}>${p.product_code ? '[' + Fmt.escapeHtml(p.product_code) + '] ' : ''}${Fmt.escapeHtml(p.name)}</option>`).join('')}
+          </select>
+          <input class="item-name w-full border border-gray-200 rounded px-2 py-1 text-sm" placeholder="項目名稱" value="${Fmt.escapeHtml(it.item_name)}" ${editable ? '' : 'disabled'} />
         </td>
         <td class="px-3 py-2 align-top">
           <input class="item-location w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="例：廚房/主人浴室" value="${Fmt.escapeHtml(it.location || '')}" ${editable ? '' : 'disabled'} />
@@ -342,7 +347,13 @@ function bindQuoteFormEvents() {
     const row = e.target.closest('.item-row')
     if (!row) return
     const idx = Number(row.dataset.idx)
-    if (e.target.classList.contains('item-product')) {
+    if (e.target.classList.contains('item-category')) {
+      // 分類切換：重置該列已選的產品（因產品清單將依新分類重新過濾，先前選的產品可能已不在清單內）
+      QuoteFormState.items[idx].category = e.target.value
+      QuoteFormState.items[idx].product_id = null
+      renderQuoteItemsTable()
+      recalcQuoteTotals()
+    } else if (e.target.classList.contains('item-product')) {
       const pid = e.target.value ? Number(e.target.value) : null
       QuoteFormState.items[idx].product_id = pid
       if (pid) {
@@ -352,13 +363,11 @@ function bindQuoteFormEvents() {
           QuoteFormState.items[idx].unit = p.unit
           QuoteFormState.items[idx].unit_price = p.unit_price
           QuoteFormState.items[idx].description = p.description || ''
-          QuoteFormState.items[idx].category = p.category || ''
+          // 分類已由使用者於「工程分類」欄位選定，此處不再由產品覆寫
         }
       }
       renderQuoteItemsTable()
       recalcQuoteTotals()
-    } else if (e.target.classList.contains('item-category')) {
-      QuoteFormState.items[idx].category = e.target.value
     }
   })
 
