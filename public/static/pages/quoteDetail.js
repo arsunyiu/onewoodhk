@@ -146,7 +146,7 @@ function renderQuoteDetail(q) {
                     let seqIdx = 0
                     return groupQuoteItemsByCategory(q.items).map((group) => `
                   <tr class="bg-gray-50">
-                    <td colspan="8" class="py-2 px-1 font-semibold text-gray-700 text-xs">${Fmt.escapeHtml(group.category)}</td>
+                    <td colspan="8" class="py-2 px-1 font-semibold text-gray-700 text-xs">${Fmt.escapeHtml(categoryHeaderWithLetter(group.category))}</td>
                   </tr>
                   ${group.items.map((it) => {
                     seqIdx += 1
@@ -379,7 +379,7 @@ function buildQuotePdfHtml(q, docType) {
     }).join('')
     return `
     <tr>
-      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(group.category)}</td>
+      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
     <tr style="border-bottom:1px solid #e5e7eb;">

@@ -45,7 +45,8 @@ Pages.quoteForm = async function (id) {
       API.get('/users')
     ])
     QuoteFormState.customers = custRes.data
-    QuoteFormState.products = prodRes.data
+    // 依分類 A-Z 順序 + 分類內建立順序排列，並附加 A1/A2/B1... 編號方便在選單中尋找對照
+    QuoteFormState.products = sortProductsWithCode(prodRes.data)
     QuoteFormState.salesUsers = userRes.data.filter((u) => u.role === 'sales' || u.role === 'manager')
 
     let existing = null
@@ -269,14 +270,14 @@ function renderQuoteItemsTable() {
         <td class="px-3 py-2 align-top">
           <select class="item-product w-full border border-gray-200 rounded px-2 py-1 text-xs mb-1" ${editable ? '' : 'disabled'}>
             <option value="">自訂項目</option>
-            ${QuoteFormState.products.map((p) => `<option value="${p.id}" ${it.product_id === p.id ? 'selected' : ''}>${Fmt.escapeHtml(p.name)}</option>`).join('')}
+            ${QuoteFormState.products.map((p) => `<option value="${p.id}" ${it.product_id === p.id ? 'selected' : ''}>${p.product_code ? '[' + Fmt.escapeHtml(p.product_code) + '] ' : ''}${Fmt.escapeHtml(p.name)}</option>`).join('')}
           </select>
           <input class="item-name w-full border border-gray-200 rounded px-2 py-1 text-sm" placeholder="項目名稱" value="${Fmt.escapeHtml(it.item_name)}" ${editable ? '' : 'disabled'} />
         </td>
         <td class="px-3 py-2 align-top">
           <select class="item-category w-full border border-gray-200 rounded px-2 py-1 text-xs" ${editable ? '' : 'disabled'}>
             <option value="">未分類</option>
-            ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(c)}</option>`).join('')}
+            ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
           </select>
         </td>
         <td class="px-3 py-2 align-top">

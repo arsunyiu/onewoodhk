@@ -30,7 +30,7 @@ Pages.products = async function () {
         </div>
         <select id="prod-category" class="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none w-48">
           <option value="">全部分類</option>
-          ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}">${Fmt.escapeHtml(c)}</option>`).join('')}
+          ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}">${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
         </select>
         <select id="prod-active" class="border border-gray-200 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none">
           <option value="1" selected>僅顯示上架中</option>
@@ -46,6 +46,7 @@ Pages.products = async function () {
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-gray-400 border-b border-gray-100">
+              <th class="px-4 py-3 font-medium w-16">編號</th>
               <th class="px-4 py-3 font-medium">產品/項目名稱</th>
               <th class="px-4 py-3 font-medium">SKU</th>
               <th class="px-4 py-3 font-medium">分類</th>
@@ -57,7 +58,7 @@ Pages.products = async function () {
             </tr>
           </thead>
           <tbody id="prod-table-body">
-            <tr><td colspan="8" class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>載入中...</td></tr>
+            <tr><td colspan="9" class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>載入中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -86,7 +87,7 @@ Pages.products = async function () {
 async function loadProductList() {
   const canManage = Auth.isManagerUp()
   const tbody = document.getElementById('prod-table-body')
-  const colspan = canManage ? 8 : 6
+  const colspan = canManage ? 9 : 7
   tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>載入中...</td></tr>`
   try {
     const res = await API.get('/products', {
@@ -94,8 +95,9 @@ async function loadProductList() {
       category: ProductListState.category,
       is_active: ProductListState.is_active
     })
-    ProductListCache = res.data
-    renderProductTable(res.data)
+    // 依分類 A-Z 順序 + 分類內建立順序排列，並附加 A1/A2/B1... 編號方便尋找對照
+    ProductListCache = sortProductsWithCode(res.data)
+    renderProductTable(ProductListCache)
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-10 text-red-400">${err.message}</td></tr>`
   }
@@ -103,7 +105,7 @@ async function loadProductList() {
 
 function renderProductTable(list) {
   const canManage = Auth.isManagerUp()
-  const colspan = canManage ? 8 : 6
+  const colspan = canManage ? 9 : 7
   const tbody = document.getElementById('prod-table-body')
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-10 text-gray-400">尚無符合條件的產品資料</td></tr>`
@@ -112,12 +114,13 @@ function renderProductTable(list) {
   tbody.innerHTML = list
     .map((p) => `
       <tr class="border-b border-gray-50 hover:bg-gray-50">
+        <td class="px-4 py-3 text-gray-400 font-mono text-xs">${Fmt.escapeHtml(p.product_code || '-')}</td>
         <td class="px-4 py-3">
           <p class="font-medium text-gray-800">${Fmt.escapeHtml(p.name)}</p>
           ${p.description ? `<p class="text-xs text-gray-400">${Fmt.escapeHtml(p.description)}</p>` : ''}
         </td>
         <td class="px-4 py-3 text-gray-500">${Fmt.escapeHtml(p.sku || '-')}</td>
-        <td class="px-4 py-3 text-gray-500">${Fmt.escapeHtml(p.category || '-')}</td>
+        <td class="px-4 py-3 text-gray-500">${Fmt.escapeHtml(categoryLabelWithLetter(p.category) || '-')}</td>
         <td class="px-4 py-3 text-gray-500">${Fmt.escapeHtml(p.unit || '件')}</td>
         <td class="px-4 py-3 text-right font-medium text-gray-800">${Number(p.unit_price).toLocaleString()}</td>
         ${canManage ? `<td class="px-4 py-3 text-right text-gray-400">${Number(p.cost_price || 0).toLocaleString()}</td>` : ''}
@@ -166,7 +169,7 @@ function openProductModal(product) {
             <label class="block text-xs font-medium text-gray-500 mb-1">分類</label>
             <select id="pm-category" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
               <option value="">請選擇分類</option>
-              ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${p.category === c ? 'selected' : ''}>${Fmt.escapeHtml(c)}</option>`).join('')}
+              ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${p.category === c ? 'selected' : ''}>${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
               <option value="__custom__" ${p.category && !PRODUCT_CATEGORIES.includes(p.category) ? 'selected' : ''}>其他（自訂分類）</option>
             </select>
             <input id="pm-category-custom" type="text" value="${p.category && !PRODUCT_CATEGORIES.includes(p.category) ? Fmt.escapeHtml(p.category) : ''}"
