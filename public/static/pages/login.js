@@ -46,11 +46,7 @@ Pages.login = function () {
         </form>
 
         <div class="mt-6 pt-5 border-t border-gray-100">
-          <p class="text-xs text-gray-400 mb-2">測試帳號（密碼皆為 OneWood2026#）：</p>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <button data-quick="admin@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user-shield text-gray-400 mr-1"></i> 管理員
-            </button>
             <button data-quick="manager@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
               <i class="fas fa-user-tie text-gray-400 mr-1"></i> 主管
             </button>
