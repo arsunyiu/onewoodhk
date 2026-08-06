@@ -363,11 +363,13 @@ function buildQuotePdfHtml(q, docType) {
   const itemGroups = groupQuoteItemsByCategory(q.items)
   let runningIdx = 0
   const headerColor = isInvoice ? '#7a5a3a' : '#1f5b45'
+  // 表格欄位標題（位置/說明等）改用深灰色，避免與分類色帶（headerColor）顏色太相近而視覺上黏在一起
+  const tableHeadColor = '#374151'
   const itemRows = itemGroups.map((group) => {
     const rows = group.items.map((it) => {
       runningIdx += 1
       return `
-    <tr style="border-bottom:1px solid #f0f0f0;">
+    <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:6px 4px;color:#9ca3af;">${runningIdx}</td>
       <td style="padding:6px 4px;color:#4b5563;">${esc(it.location || '-')}</td>
       <td style="padding:6px 4px;color:#1f2937;">${esc(it.item_name)}${it.description ? `<div style="font-size:10px;color:#9ca3af;margin-top:1px;">${esc(it.description)}</div>` : ''}</td>
@@ -378,11 +380,11 @@ function buildQuotePdfHtml(q, docType) {
     </tr>`
     }).join('')
     return `
-    <tr>
+    <tr class="pdf-row">
       <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
-    <tr style="border-bottom:1px solid #e5e7eb;">
+    <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
       <td colspan="6" style="padding:5px 4px;text-align:right;font-size:10px;color:#6b7280;">Sub-total 小計</td>
       <td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:700;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
     </tr>`
@@ -401,7 +403,7 @@ function buildQuotePdfHtml(q, docType) {
     </div>` : ''
 
   const termsBlock = q.terms ? `
-    <div style="margin-top:18px;">
+    <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
       <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(q.terms)}</div>
     </div>` : ''
@@ -439,10 +441,10 @@ function buildQuotePdfHtml(q, docType) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:${headerColor};color:#fff;">
+        <tr style="background:${tableHeadColor};color:#fff;">
           <th style="padding:7px 4px;text-align:left;font-weight:600;width:22px;">No.</th>
-          <th style="padding:7px 4px;text-align:left;font-weight:600;width:70px;">Location<br/>位置</th>
-          <th style="padding:7px 4px;text-align:left;font-weight:600;">Description<br/>說明</th>
+          <th style="padding:7px 4px;text-align:left;font-weight:600;width:70px;">位置</th>
+          <th style="padding:7px 4px;text-align:left;font-weight:600;">說明</th>
           <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">數量</th>
           <th style="padding:7px 4px;text-align:right;font-weight:600;width:40px;">單位</th>
           <th style="padding:7px 4px;text-align:right;font-weight:600;width:60px;">單價</th>
@@ -452,7 +454,7 @@ function buildQuotePdfHtml(q, docType) {
       <tbody>${itemRows}</tbody>
     </table>
 
-    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+    <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:12px;">
       <div style="width:220px;font-size:12px;">
         <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
           <span>未稅小計</span><span>${Fmt.currency(q.subtotal, q.currency)}</span>
@@ -465,7 +467,7 @@ function buildQuotePdfHtml(q, docType) {
       </div>
     </div>
 
-    <div style="margin-top:22px;">
+    <div class="pdf-row" style="margin-top:22px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
       <div style="font-size:11px;color:#4b5563;line-height:1.6;">
         <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
@@ -476,13 +478,15 @@ function buildQuotePdfHtml(q, docType) {
 
     ${termsBlock}
 
-    <div style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
+    <div class="pdf-row" style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
       ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
     </div>
   </div>`
 }
 
 // 共用的 HTML -> PDF 產生流程（報價單／發票共用，僅版面內容與檔名不同）
+// 分頁邏輯：依畫面上標記 class="pdf-row" 的元素邊界找安全斷點分頁，
+// 避免表格列（或收款資訊等區塊）被硬生生從中間切開；並在每頁上下保留邊距空白。
 async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
   if (!window.jspdf || !window.html2canvas) {
     showToast('PDF 匯出元件載入中，請稍後再試', 'error')
@@ -502,31 +506,94 @@ async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
   document.body.appendChild(container)
 
   try {
-    const canvas = await html2canvas(container.firstElementChild, {
-      scale: 2,
+    const scale = 2
+    const contentEl = container.firstElementChild
+    // 記錄所有「不可裁切」區塊（表格分類列/項目列/小計/頁尾等）在內容中的上下邊界座標（CSS px）
+    // 注意：表格 <tr> 在部分瀏覽器中 offsetTop/offsetParent 的計算基準會跟一般 <div> 不同
+    // （anonymous table box 導致 offsetParent 並非預期的容器），故改用
+    // getBoundingClientRect() 相對容器頂部的距離計算，避免斷點算錯導致列被從中間裁斷。
+    const containerTop = contentEl.getBoundingClientRect().top
+    const rowEls = Array.from(contentEl.querySelectorAll('.pdf-row'))
+    const rowRectsCss = rowEls
+      .map((el) => {
+        const r = el.getBoundingClientRect()
+        return { top: r.top - containerTop, bottom: r.bottom - containerTop }
+      })
+      .sort((a, b) => a.top - b.top)
+
+    // 安全斷點：取相鄰兩個不可裁切區塊之間「空白間隙」的中點，而不是直接用區塊本身量到的邊界。
+    // 原因：getBoundingClientRect() 量到的區塊框，有時無法完全包住粗體文字/數字實際渲染出來的墨跡
+    // （字型 line-height、anti-aliasing 造成的視覺溢出），若直接拿邊界當斷點，可能剛好切在文字中間。
+    // 改用相鄰區塊間空白間隙的中點，即使量測有 1~2px 誤差，斷點仍必定落在真正的空白處。
+    const rowBottomsCss = []
+    for (let i = 0; i < rowRectsCss.length - 1; i++) {
+      const gapTop = rowRectsCss[i].bottom
+      const gapBottom = rowRectsCss[i + 1].top
+      rowBottomsCss.push(gapBottom > gapTop ? (gapTop + gapBottom) / 2 : gapTop)
+    }
+    if (rowRectsCss.length > 0) {
+      rowBottomsCss.push(rowRectsCss[rowRectsCss.length - 1].bottom)
+    }
+    rowBottomsCss.sort((a, b) => a - b)
+
+    const canvas = await html2canvas(contentEl, {
+      scale,
       useCORS: true,
       backgroundColor: '#ffffff'
     })
 
     const { jsPDF } = window.jspdf
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = pdf.internal.pageSize.getHeight()
-    const imgWidth = pdfWidth
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-    const imgData = canvas.toDataURL('image/png')
+    const pdfWidthMm = pdf.internal.pageSize.getWidth()
+    const pdfHeightMm = pdf.internal.pageSize.getHeight()
+    const imgWidthMm = pdfWidthMm
+    const pxPerMm = canvas.width / imgWidthMm
 
-    let heightLeft = imgHeight
-    let position = 0
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-    heightLeft -= pdfHeight
+    // 每頁上下各保留邊距，避免內容貼邊、底部留白
+    const topMarginMm = 8
+    const bottomMarginMm = 12
+    const pageContentHeightPx = (pdfHeightMm - topMarginMm - bottomMarginMm) * pxPerMm
 
-    while (heightLeft > 0.5) {
-      position -= pdfHeight
-      pdf.addPage()
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pdfHeight
+    const rowBottomsPx = rowBottomsCss.map((v) => v * scale)
+    const totalHeightPx = canvas.height
+
+    // 依安全斷點（不可裁切區塊的底部邊界）切出每一頁的 [startPx, endPx) 範圍
+    const slices = []
+    let cursor = 0
+    while (cursor < totalHeightPx - 0.5) {
+      const target = cursor + pageContentHeightPx
+      if (target >= totalHeightPx) {
+        slices.push([cursor, totalHeightPx])
+        break
+      }
+      let breakPoint = null
+      for (const rb of rowBottomsPx) {
+        if (rb > cursor + 0.5 && rb <= target) breakPoint = rb
+        if (rb > target) break
+      }
+      if (breakPoint === null) {
+        // 找不到安全斷點（單一區塊本身就超過一頁高度），只能強制裁切
+        breakPoint = target
+      }
+      slices.push([cursor, breakPoint])
+      cursor = breakPoint
     }
+
+    // 將整張畫面依安全斷點切成多張子畫布，逐頁貼入 PDF
+    const sliceCanvas = document.createElement('canvas')
+    const sliceCtx = sliceCanvas.getContext('2d')
+    slices.forEach(([startPx, endPx], idx) => {
+      const sliceHeightPx = endPx - startPx
+      if (sliceHeightPx <= 0) return
+      sliceCanvas.width = canvas.width
+      sliceCanvas.height = sliceHeightPx
+      sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height)
+      sliceCtx.drawImage(canvas, 0, startPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx)
+      const sliceImgData = sliceCanvas.toDataURL('image/png')
+      const sliceHeightMm = sliceHeightPx / pxPerMm
+      if (idx > 0) pdf.addPage()
+      pdf.addImage(sliceImgData, 'PNG', 0, topMarginMm, imgWidthMm, sliceHeightMm)
+    })
 
     pdf.save(fileName)
   } catch (err) {
