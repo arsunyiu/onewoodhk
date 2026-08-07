@@ -484,6 +484,13 @@ quotes.post('/:id/attachments', async (c) => {
   const MAX_SIZE = 20 * 1024 * 1024 // 20MB
   if (file.size > MAX_SIZE) return fail(c, '檔案大小不可超過 20MB', 400)
 
+  // 僅允許 Word / Excel / PDF / JPEG / PNG
+  const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (!ALLOWED_EXTS.includes(ext)) {
+    return fail(c, '僅支援 Word、Excel、PDF、JPEG、PNG 檔案', 400)
+  }
+
   const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fff]/g, '_')
   const r2Key = `quotes/${id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`
 

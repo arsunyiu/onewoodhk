@@ -198,9 +198,10 @@ function renderQuoteDetail(q) {
               <h2 class="text-sm font-semibold text-gray-700"><i class="fas fa-paperclip mr-1.5 text-gray-400"></i>附件（圖紙等檔案）</h2>
               <label class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg cursor-pointer">
                 <i class="fas fa-upload mr-1"></i>上傳附件
-                <input type="file" id="qd-attachment-input" class="hidden" />
+                <input type="file" id="qd-attachment-input" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png" />
               </label>
             </div>
+            <p class="text-[11px] text-gray-400 -mt-2 mb-2">僅支援 Word、Excel、PDF、JPEG、PNG 檔案，大小上限 20MB</p>
             <div id="qd-attachments-list" class="space-y-2">
               <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
             </div>
@@ -357,16 +358,14 @@ const ATTACHMENT_ICON_MAP = {
   png: 'fa-file-image text-blue-400',
   jpg: 'fa-file-image text-blue-400',
   jpeg: 'fa-file-image text-blue-400',
-  gif: 'fa-file-image text-blue-400',
-  webp: 'fa-file-image text-blue-400',
-  dwg: 'fa-file-lines text-purple-500',
-  dxf: 'fa-file-lines text-purple-500',
   doc: 'fa-file-word text-blue-600',
   docx: 'fa-file-word text-blue-600',
   xls: 'fa-file-excel text-green-600',
-  xlsx: 'fa-file-excel text-green-600',
-  zip: 'fa-file-zipper text-yellow-600'
+  xlsx: 'fa-file-excel text-green-600'
 }
+
+// 允許上傳的副檔名（Word / Excel / PDF / JPEG / PNG）
+const ALLOWED_ATTACHMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']
 
 function attachmentIcon(fileName) {
   const ext = (fileName.split('.').pop() || '').toLowerCase()
@@ -437,10 +436,13 @@ async function downloadQuoteAttachment(quoteId, attId, fileName) {
     const a = document.createElement('a')
     a.href = url
     a.download = fileName || 'attachment'
+    // 標記為外部連結，避免被 SPA 前端路由（main.js 的全域 click 攔截器）攔截，
+    // 否則 preventDefault() 會擋掉下載，且 blob: 網址會被誤判為站內路徑導致跳轉到 404
+    a.setAttribute('data-external', 'true')
     document.body.appendChild(a)
     a.click()
     a.remove()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   } catch (err) {
     showToast(err.message || '下載失敗', 'error')
   }
@@ -448,6 +450,11 @@ async function downloadQuoteAttachment(quoteId, attId, fileName) {
 
 async function uploadQuoteAttachment(quoteId, file) {
   const MAX_SIZE = 20 * 1024 * 1024
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (!ALLOWED_ATTACHMENT_EXTS.includes(ext)) {
+    showToast('僅支援 Word、Excel、PDF、JPEG、PNG 檔案', 'error')
+    return
+  }
   if (file.size > MAX_SIZE) {
     showToast('檔案大小不可超過 20MB', 'error')
     return
