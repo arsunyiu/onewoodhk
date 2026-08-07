@@ -192,6 +192,20 @@ function renderQuoteDetail(q) {
             </div>
           </div>
 
+          <!-- 附件（圖紙等檔案） -->
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-gray-700"><i class="fas fa-paperclip mr-1.5 text-gray-400"></i>附件（圖紙等檔案）</h2>
+              <label class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg cursor-pointer">
+                <i class="fas fa-upload mr-1"></i>上傳附件
+                <input type="file" id="qd-attachment-input" class="hidden" />
+              </label>
+            </div>
+            <div id="qd-attachments-list" class="space-y-2">
+              <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
+            </div>
+          </div>
+
           ${q.terms ? `
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-2">條款/付款方式</h2>
@@ -323,6 +337,152 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
   bind('qd-export-invoice', () => exportInvoicePdf(q))
+
+  const fileInput = document.getElementById('qd-attachment-input')
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0]
+      if (file) uploadQuoteAttachment(q.id, file)
+      fileInput.value = ''
+    })
+  }
+  loadQuoteAttachments(q.id)
+}
+
+// ============================================================
+// 附件（圖紙等檔案）
+// ============================================================
+const ATTACHMENT_ICON_MAP = {
+  pdf: 'fa-file-pdf text-red-500',
+  png: 'fa-file-image text-blue-400',
+  jpg: 'fa-file-image text-blue-400',
+  jpeg: 'fa-file-image text-blue-400',
+  gif: 'fa-file-image text-blue-400',
+  webp: 'fa-file-image text-blue-400',
+  dwg: 'fa-file-lines text-purple-500',
+  dxf: 'fa-file-lines text-purple-500',
+  doc: 'fa-file-word text-blue-600',
+  docx: 'fa-file-word text-blue-600',
+  xls: 'fa-file-excel text-green-600',
+  xlsx: 'fa-file-excel text-green-600',
+  zip: 'fa-file-zipper text-yellow-600'
+}
+
+function attachmentIcon(fileName) {
+  const ext = (fileName.split('.').pop() || '').toLowerCase()
+  return ATTACHMENT_ICON_MAP[ext] || 'fa-file text-gray-400'
+}
+
+function formatFileSize(bytes) {
+  const n = Number(bytes || 0)
+  if (n < 1024) return n + ' B'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB'
+  return (n / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+async function loadQuoteAttachments(quoteId) {
+  const el = document.getElementById('qd-attachments-list')
+  if (!el) return
+  try {
+    const res = await API.get(`/quotes/${quoteId}/attachments`)
+    renderQuoteAttachments(quoteId, res.data)
+  } catch (err) {
+    el.innerHTML = `<p class="text-xs text-red-400">${Fmt.escapeHtml(err.message)}</p>`
+  }
+}
+
+function renderQuoteAttachments(quoteId, attachments) {
+  const el = document.getElementById('qd-attachments-list')
+  if (!el) return
+  const user = Auth.getUser()
+  if (!attachments || attachments.length === 0) {
+    el.innerHTML = `<p class="text-xs text-gray-400">尚未上傳任何附件</p>`
+    return
+  }
+  el.innerHTML = attachments
+    .map((a) => {
+      const canDelete = Auth.isManagerUp() || (user && user.id === a.uploaded_by)
+      return `
+    <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100">
+      <button data-att-id="${a.id}" data-att-name="${Fmt.escapeHtml(a.file_name)}" class="qd-att-download flex items-center gap-2.5 min-w-0 flex-1 text-sm text-gray-700 hover:text-primary-600 text-left">
+        <i class="fas ${attachmentIcon(a.file_name)}"></i>
+        <span class="truncate">${Fmt.escapeHtml(a.file_name)}</span>
+        <span class="text-xs text-gray-400 shrink-0">${formatFileSize(a.file_size)}</span>
+      </button>
+      <div class="flex items-center gap-2 shrink-0 text-xs text-gray-400">
+        <span>${Fmt.escapeHtml(a.uploaded_by_name)} · ${Fmt.datetime(a.created_at)}</span>
+        ${canDelete ? `<button data-att-id="${a.id}" class="qd-att-delete text-gray-400 hover:text-red-600 px-1"><i class="fas fa-trash"></i></button>` : ''}
+      </div>
+    </div>`
+    })
+    .join('')
+
+  el.querySelectorAll('.qd-att-delete').forEach((btn) => {
+    btn.addEventListener('click', () => deleteQuoteAttachment(quoteId, btn.dataset.attId))
+  })
+  el.querySelectorAll('.qd-att-download').forEach((btn) => {
+    btn.addEventListener('click', () => downloadQuoteAttachment(quoteId, btn.dataset.attId, btn.dataset.attName))
+  })
+}
+
+async function downloadQuoteAttachment(quoteId, attId, fileName) {
+  try {
+    const token = Auth.getToken()
+    const resp = await fetch(`/api/quotes/${quoteId}/attachments/${attId}/download`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!resp.ok) throw new Error('下載失敗')
+    const blob = await resp.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName || 'attachment'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    showToast(err.message || '下載失敗', 'error')
+  }
+}
+
+async function uploadQuoteAttachment(quoteId, file) {
+  const MAX_SIZE = 20 * 1024 * 1024
+  if (file.size > MAX_SIZE) {
+    showToast('檔案大小不可超過 20MB', 'error')
+    return
+  }
+  const el = document.getElementById('qd-attachments-list')
+  const prevHtml = el ? el.innerHTML : ''
+  if (el) el.innerHTML = `<p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>上傳中...</p>`
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const token = Auth.getToken()
+    const resp = await fetch(`/api/quotes/${quoteId}/attachments`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form
+    })
+    const json = await resp.json().catch(() => ({}))
+    if (!resp.ok || !json.success) throw new Error(json.error || '上傳失敗')
+    showToast('附件上傳成功')
+    loadQuoteAttachments(quoteId)
+  } catch (err) {
+    if (el) el.innerHTML = prevHtml
+    showToast(err.message || '上傳失敗', 'error')
+  }
+}
+
+async function deleteQuoteAttachment(quoteId, attId) {
+  if (!confirm('確定要刪除此附件嗎？')) return
+  try {
+    await API.delete(`/quotes/${quoteId}/attachments/${attId}`)
+    showToast('附件已刪除')
+    loadQuoteAttachments(quoteId)
+  } catch (err) {
+    showToast(err.message || '刪除失敗', 'error')
+  }
 }
 
 async function runQuoteAction(id, action, confirmMsg, payload) {

@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'onewood-crm',
       script: 'npx',
-      args: 'wrangler pages dev dist --d1=onewood-crm-production --local --ip 0.0.0.0 --port 3000',
+      args: 'wrangler pages dev dist --d1=onewood-crm-production --r2=onewood-crm-attachments --local --ip 0.0.0.0 --port 3000',
       env: {
         NODE_ENV: 'development',
         PORT: 3000

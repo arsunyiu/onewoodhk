@@ -5,6 +5,7 @@
 export type Bindings = {
   DB: D1Database
   JWT_SECRET: string
+  R2: R2Bucket
 }
 
 export type UserRole = 'admin' | 'manager' | 'sales'

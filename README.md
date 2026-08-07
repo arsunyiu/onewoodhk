@@ -300,3 +300,14 @@ bash scripts/setup_hosted_secrets.sh
 - `setup_hosted_secrets.sh` 若加上 `--force` 會產生新的 `JWT_SECRET` 並覆蓋舊值 —— 這會讓所有現有使用者的登入 token 立即失效（需重新登入），僅在懷疑 secret 洩漏或需要輪換時使用。
 - Secrets 的值一經 `gsk hosted secret_put` 設定後無法再讀回（write-only），`gsk hosted secret_list` 只能看到名稱，看不到值。
 - 一般日常重新部署（未加 `--rebuild_db` / `--recreate_worker`）通常不需要重跑本檢查清單，因為 D1 資料與既有 secrets 不會被清除；但若不確定，重新執行一次也是安全的（皆為 idempotent 設計）。
+
+## 附件上傳功能 (Quote Attachments)
+- **新增日期**: 2026-08-07
+- **功能**: 報價單詳情頁可上傳/下載/刪除附件檔案（如圖紙、平面圖等），最大 20MB
+- **儲存**: Cloudflare R2 (`onewood-crm-attachments` bucket) 存放檔案本體，D1 `quote_attachments` 表存放中繼資料
+- **API**:
+  - `GET /api/quotes/:id/attachments` - 列出附件
+  - `POST /api/quotes/:id/attachments` - 上傳附件 (multipart/form-data, field name: `file`)
+  - `GET /api/quotes/:id/attachments/:attId/download` - 下載附件（需授權標頭，前端以 fetch+blob 方式觸發下載）
+  - `DELETE /api/quotes/:id/attachments/:attId` - 刪除附件（銷售只能刪自己上傳的，經理以上可刪任何附件）
+- **權限**: 沿用報價單既有的角色可視範圍規則 (`getVisibleOwnerIds`)

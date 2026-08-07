@@ -12,5 +12,11 @@
       "database_name": "onewood-crm-production",
       "database_id": "REPLACE_WITH_PRODUCTION_DATABASE_ID"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "onewood-crm-attachments"
+    }
   ]
 }

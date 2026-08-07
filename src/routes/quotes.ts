@@ -439,4 +439,122 @@ quotes.post('/:id/lose', async (c) => {
   return ok(c, { id, status: 'lost' })
 })
 
+// ============================================================
+// 附件管理（圖紙等檔案，存放於 Cloudflare R2）
+// ============================================================
+
+/** 確認使用者對此報價單有存取權限，回傳報價單資料或 null */
+async function getQuoteWithAccess(db: D1Database, user: JwtPayload, quoteId: string) {
+  const quote = await db.prepare('SELECT * FROM quotes WHERE id = ?').bind(quoteId).first<any>()
+  if (!quote) return null
+  const ownerIds = await getVisibleOwnerIds(db, user)
+  if (ownerIds !== null && !ownerIds.includes(quote.owner_id)) return null
+  return quote
+}
+
+// GET /api/quotes/:id/attachments  列出附件
+quotes.get('/:id/attachments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const quote = await getQuoteWithAccess(c.env.DB, user, id)
+  if (!quote) return fail(c, '找不到此報價單或無權限', 404)
+
+  const rows = await c.env.DB.prepare(
+    `SELECT a.*, u.name as uploaded_by_name
+     FROM quote_attachments a
+     JOIN users u ON u.id = a.uploaded_by
+     WHERE a.quote_id = ? ORDER BY a.created_at DESC`
+  )
+    .bind(id)
+    .all()
+  return ok(c, rows.results)
+})
+
+// POST /api/quotes/:id/attachments  上傳附件（multipart/form-data，欄位名 file）
+quotes.post('/:id/attachments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const quote = await getQuoteWithAccess(c.env.DB, user, id)
+  if (!quote) return fail(c, '找不到此報價單或無權限', 404)
+
+  const form = await c.req.formData().catch(() => null)
+  const file = form?.get('file')
+  if (!file || !(file instanceof File)) return fail(c, '請選擇要上傳的檔案', 400)
+
+  const MAX_SIZE = 20 * 1024 * 1024 // 20MB
+  if (file.size > MAX_SIZE) return fail(c, '檔案大小不可超過 20MB', 400)
+
+  const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fff]/g, '_')
+  const r2Key = `quotes/${id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`
+
+  const buf = await file.arrayBuffer()
+  await c.env.R2.put(r2Key, buf, {
+    httpMetadata: { contentType: file.type || 'application/octet-stream' }
+  })
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO quote_attachments (quote_id, file_name, r2_key, content_type, file_size, uploaded_by)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  )
+    .bind(id, file.name, r2Key, file.type || 'application/octet-stream', file.size, user.sub)
+    .run()
+
+  const attachment = await c.env.DB.prepare(
+    `SELECT a.*, u.name as uploaded_by_name FROM quote_attachments a
+     JOIN users u ON u.id = a.uploaded_by WHERE a.id = ?`
+  )
+    .bind(result.meta.last_row_id)
+    .first()
+
+  return ok(c, attachment, undefined, 201)
+})
+
+// GET /api/quotes/:id/attachments/:attId/download  下載附件（回傳檔案內容）
+quotes.get('/:id/attachments/:attId/download', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const attId = c.req.param('attId')
+  const quote = await getQuoteWithAccess(c.env.DB, user, id)
+  if (!quote) return fail(c, '找不到此報價單或無權限', 404)
+
+  const att = await c.env.DB.prepare('SELECT * FROM quote_attachments WHERE id = ? AND quote_id = ?')
+    .bind(attId, id)
+    .first<any>()
+  if (!att) return fail(c, '找不到此附件', 404)
+
+  const object = await c.env.R2.get(att.r2_key)
+  if (!object) return fail(c, '檔案不存在或已被刪除', 404)
+
+  const encodedName = encodeURIComponent(att.file_name)
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': att.content_type || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${encodedName}"; filename*=UTF-8''${encodedName}`
+    }
+  })
+})
+
+// DELETE /api/quotes/:id/attachments/:attId  刪除附件
+quotes.delete('/:id/attachments/:attId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const attId = c.req.param('attId')
+  const quote = await getQuoteWithAccess(c.env.DB, user, id)
+  if (!quote) return fail(c, '找不到此報價單或無權限', 404)
+
+  const att = await c.env.DB.prepare('SELECT * FROM quote_attachments WHERE id = ? AND quote_id = ?')
+    .bind(attId, id)
+    .first<any>()
+  if (!att) return fail(c, '找不到此附件', 404)
+
+  // 僅上傳者本人、或 manager 以上角色可刪除
+  if (user.role === 'sales' && att.uploaded_by !== user.sub) {
+    return fail(c, '無權限刪除此附件', 403)
+  }
+
+  await c.env.R2.delete(att.r2_key)
+  await c.env.DB.prepare('DELETE FROM quote_attachments WHERE id = ?').bind(attId).run()
+  return ok(c, { id: attId })
+})
+
 export default quotes
