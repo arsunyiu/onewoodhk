@@ -391,7 +391,7 @@ function buildQuotePdfHtml(q, docType) {
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:2px 4px 10px 4px;line-height:1;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
+      <td colspan="7" style="padding:0px 4px 12px 4px;line-height:1;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
@@ -452,13 +452,13 @@ function buildQuotePdfHtml(q, docType) {
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:22px;">No.</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:70px;">位置</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;">說明</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:40px;">數量</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:40px;">單位</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:60px;">單價</th>
-          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:72px;">小計</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:22px;">No.</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:70px;">位置</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;">說明</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">數量</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">單位</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:60px;">單價</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:72px;">小計</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
