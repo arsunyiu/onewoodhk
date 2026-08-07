@@ -36,7 +36,7 @@ function renderLayout(activeKey) {
   return `
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
+    <aside class="w-[30%] sm:w-60 bg-white border-r border-gray-200 flex flex-col shrink-0">
       <div class="h-16 flex items-center gap-2 px-5 border-b border-gray-100">
         <img src="/static/images/logo.png" alt="一木工程" class="w-9 h-9 object-contain shrink-0" />
         <span class="font-bold text-lg text-gray-800">一木工程</span>
