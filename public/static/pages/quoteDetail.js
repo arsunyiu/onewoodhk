@@ -373,8 +373,8 @@ function buildQuotePdfHtml(q, docType) {
   const itemGroups = groupQuoteItemsByCategory(q.items)
   let runningIdx = 0
   const headerColor = isInvoice ? '#7a5a3a' : '#1f5b45'
-  // 表格欄位標題（位置/說明等）改為金色，與 Logo 的金色一致
-  const tableHeadColor = '#b8935a'
+  // 表格欄位標題（位置/說明等）改回綠色系，但用較淺的綠色跟分類色帶（headerColor）區分，避免撞色
+  const tableHeadColor = isInvoice ? '#9c7a52' : '#3f8f6d'
   const itemRows = itemGroups.map((group) => {
     const rows = group.items.map((it) => {
       runningIdx += 1
@@ -391,7 +391,7 @@ function buildQuotePdfHtml(q, docType) {
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:6px 4px;font-weight:700;font-size:11px;color:#fff;background:${headerColor};text-align:center;">${esc(categoryHeaderWithLetter(group.category))}</td>
+      <td colspan="7" style="padding:5px 4px;line-height:1.2;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
@@ -451,14 +451,14 @@ function buildQuotePdfHtml(q, docType) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
       <thead>
-        <tr style="background:${tableHeadColor};color:#2b2110;">
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:22px;">No.</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:70px;">位置</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;">說明</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:40px;">數量</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:40px;">單位</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:60px;">單價</th>
-          <th style="padding:7px 4px;text-align:center;font-weight:600;width:72px;">小計</th>
+        <tr style="background:${tableHeadColor};color:#fff;">
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:22px;">No.</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:70px;">位置</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;">說明</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:40px;">數量</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:40px;">單位</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:60px;">單價</th>
+          <th style="padding:5px 4px;line-height:1.2;text-align:center;font-weight:600;width:72px;">小計</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
