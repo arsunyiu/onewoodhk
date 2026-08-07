@@ -130,14 +130,14 @@ function renderQuoteDetail(q) {
             <div class="overflow-x-auto">
               <table class="w-full text-sm table-fixed">
                 <colgroup>
-                  <col style="width:3%" />
+                  <col style="width:5%" />
+                  <col style="width:10%" />
+                  <col style="width:50%" />
+                  <col style="width:7%" />
+                  <col style="width:7%" />
+                  <col style="width:10%" />
+                  <col style="width:5%" />
                   <col style="width:6%" />
-                  <col style="width:70%" />
-                  <col style="width:4%" />
-                  <col style="width:4%" />
-                  <col style="width:6%" />
-                  <col style="width:3%" />
-                  <col style="width:4%" />
                 </colgroup>
                 <thead>
                   <tr class="text-left text-gray-400 border-b border-gray-100">
