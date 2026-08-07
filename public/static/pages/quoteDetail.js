@@ -391,7 +391,7 @@ function buildQuotePdfHtml(q, docType) {
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:5px 4px;line-height:1.2;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
+      <td colspan="7" style="padding:5px 4px;line-height:1.2;font-weight:700;font-size:11px;color:#fff;background:${headerColor};vertical-align:middle;">${esc(categoryHeaderWithLetter(group.category))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
