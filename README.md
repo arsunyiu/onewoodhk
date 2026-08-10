@@ -18,8 +18,9 @@
 - **報表分析**：新增 `GET /api/reports/summary?range=` 統計 API(依角色資料範圍過濾)，前端已完成**報表分析頁**：期間篩選(近30/90/180/365天/全部)、KPI總覽卡(期間報價數/成交金額/成交轉換率/平均成交金額)、近6個月報價建立量vs成交金額趨勢圖(Chart.js雙軸長條+線圖)、Pipeline即時狀態分布甜甜圈圖、業務業績排行表(依成交金額排序，含排名徽章與進度條)、客戶貢獻排行Top10(依累計成交金額，可點擊追溯客戶詳情)
 - **財務管理(訂單收款追蹤)**：新增 `order_payments` 表記錄成交訂單的收款，前端**財務頁**(`/finance`，**僅admin/manager可用**，manager依團隊範圍過濾)：訂單收款總覽(訂單金額/已收金額/未收餘額/付款狀態)、**訂單收款詳情頁**(`/finance/:id`，收款紀錄列表 + manager/admin可登記新收款/刪除收款)。sales角色無法存取此模組(側邊選單不顯示、直接輸入網址會顯示權限不足頁面、後端API回傳403)
 - **會計管理(公司出入帳)**：新增 `accounting_entries` 表記錄公司整體收入/支出(含工程支出、人工、材料採購等分類，另有 `counterparty_name` 收款人/入帳名稱欄位)，前端**會計頁**(`/accounting`，僅admin/manager可用)：收支總覽卡(近一年總收入/總支出/淨利)、近6個月收支趨勢圖(Chart.js)、分類統計、出入帳列表(可篩選類型/分類/日期區間/關鍵字、新增/編輯/admin可刪除，含收款人/入帳名稱欄位)、**週/月/年出入帳報表**(可切換期間、上一期/下一期導航、分類明細、CSV匯出，Excel相容含BOM)
-- **工程管理(施工進度追蹤)**：新增 `projects`(每張成交訂單對應一筆工程紀錄，1:1)+ `project_logs`(進度時間軸紀錄)表，報價成交(`/api/quotes/:id/win`)時自動建立對應工程紀錄(預設負責人為訂單業務、地址帶入報價工程地址)。前端**工程管理頁**(`/projects`，**所有角色皆可使用**，依角色資料範圍過濾，與財務/會計不同，非manager+限定)：工程總覽卡(依狀態統計數量)、工程列表(狀態篩選/分頁，可點擊追溯來源訂單)、**工程詳情頁**(`/projects/:id`)顯示工程基本資訊(狀態/進度百分比/預計及實際完工日/工地地址/負責人/備註)與進度時間軸；管理操作(編輯工程設定、新增/刪除時間軸紀錄)僅限 admin、manager(團隊範圍內)或**該訂單負責業務本人**，其餘使用者僅能檢視(無編輯表單)、非本人且非manager+訪問他人工程詳情會回傳404
-- **供應商管理(判頭/工人/供應商資料及評分)**：新增 `suppliers`(判頭/自聘工人/物料供應商基本資料，含類型/工種/聯絡人/電話/手機/身份證或商業登記號/地址/收款銀行帳戶/合作狀態/備註)+ `supplier_ratings`(評分紀錄，1-5星+評語+評分人+評分日期，可選關聯訂單)表。前端**供應商管理頁**(`/suppliers`，**所有角色皆可檢視**，新增/編輯限manager+，刪除限admin)：搜尋/類型/工種/合作狀態篩選、依名稱或評分排序、星級評分顯示(讀取平均分自動四捨五入至0.5)、新增/編輯Modal(工種下拉選單支援自訂輸入，沿用產品目錄的自訂分類模式)；**供應商詳情頁**(`/suppliers/:id`)顯示基本資料卡片、評分紀錄列表(可新增評分、admin可刪除評分)、平均評分側欄(星級+總評分次數)
+- **工程管理(施工進度追蹤)**：新增 `projects`(每張成交訂單對應一筆工程紀錄，1:1)+ `project_logs`(進度時間軸紀錄)表，報價成交(`/api/quotes/:id/win`)時自動建立對應工程紀錄(預設負責人為訂單業務、地址帶入報價工程地址)。前端**工程管理頁**(`/projects`，**所有角色皆可使用**，依角色資料範圍過濾，與財務/會計不同，非manager+限定)：工程總覽卡(依狀態統計數量)、工程列表(狀態篩選/分頁，可點擊追溯來源訂單)、**工程詳情頁**(`/projects/:id`)顯示工程基本資訊(狀態/進度百分比/預計及實際完工日/工地地址/負責人/備註)、進度時間軸、**已指派判頭/工人清單**(顯示供應商名稱/類型/工種/聯絡方式/評分星級/起訖日期/備註，可就地變更指派狀態或移除)；管理操作(編輯工程設定、新增/刪除時間軸紀錄、指派/移除判頭工人)僅限 admin、manager(團隊範圍內)或**該訂單負責業務本人**，其餘使用者僅能檢視(無編輯表單)、非本人且非manager+訪問他人工程詳情會回傳404
+- **供應商管理(判頭/工人/供應商資料及評分)**：新增 `suppliers`(判頭/自聘工人/物料供應商基本資料，含類型/工種/聯絡人/電話/手機/身份證或商業登記號/地址/收款銀行帳戶/合作狀態/備註)+ `supplier_ratings`(評分紀錄，1-5星+評語+評分人+評分日期，可選關聯訂單)表。前端**供應商管理頁**(`/suppliers`，**所有角色皆可檢視**，新增/編輯限manager+，刪除限admin)：搜尋/類型/工種/合作狀態篩選、依名稱或評分排序、星級評分顯示(讀取平均分自動四捨五入至0.5)、新增/編輯Modal(工種下拉選單支援自訂輸入，沿用產品目錄的自訂分類模式)；**供應商詳情頁**(`/suppliers/:id`)顯示基本資料卡片、評分紀錄列表(可新增評分、admin可刪除評分)、**參與工程清單**(反向查詢此供應商曾被指派的工程，顯示訂單編號/客戶/工程狀態/進度/工地地址/指派工種與期間，可點擊連結至工程詳情頁)、平均評分側欄(星級+總評分次數)
+- **工程 × 供應商指派整合**：新增 `project_suppliers` 中介表，可於工程詳情頁將判頭/工人/供應商指派至特定工程(選擇供應商後自動帶入其預設工種，可另填起訖日期/備註)，並在供應商詳情頁反向查看其參與過的所有工程；指派紀錄有獨立狀態(進行中/已完成/已取消)可就地更新，權限沿用工程管理既有規則(admin/manager範圍內或訂單負責業務本人)
 - **共用元件**：新增輕量 Modal 元件(`openModal`/`closeModal`，於 `layout.js`)，供聯絡人/跟進紀錄/產品/使用者/會計的新增編輯表單共用
 - **角色權限與資料範圍控制**：
   - `admin`：可見全公司所有資料
@@ -74,12 +75,17 @@
 | DELETE | /api/projects/logs/:logId | 刪除進度紀錄 | admin/manager(範圍內)或紀錄建立者本人 |
 | GET | /api/suppliers | 供應商/判頭列表 `?search=&type=&trade=&status=&sort=name\|rating` | 需登入 |
 | GET | /api/suppliers/trades | 工種選項清單 | 需登入 |
+| GET | /api/suppliers/:id/projects | 查詢此供應商/判頭/工人參與過的工程(反向查詢) | 需登入 |
 | GET | /api/suppliers/:id | 供應商詳情(含完整評分紀錄與統計) | 需登入 |
 | POST | /api/suppliers | 新增供應商/判頭 | manager/admin |
 | PUT | /api/suppliers/:id | 編輯供應商/判頭 | manager/admin |
 | DELETE | /api/suppliers/:id | 刪除供應商/判頭 | admin |
 | POST | /api/suppliers/:id/ratings | 新增評分(1-5星+評語) | manager/admin |
 | DELETE | /api/suppliers/:supplierId/ratings/:ratingId | 刪除評分 | admin |
+| GET | /api/projects/:id/assignments | 取得工程已指派判頭/工人/供應商清單(含評分統計) | 需登入+角色範圍檢查 |
+| POST | /api/projects/:id/assignments | 指派判頭/工人/供應商至工程 | admin/manager(範圍內)或訂單負責業務本人 |
+| PUT | /api/projects/assignments/:assignmentId | 更新指派紀錄(狀態/工種/起訖日期/備註) | admin/manager(範圍內)或訂單負責業務本人 |
+| DELETE | /api/projects/assignments/:assignmentId | 移除指派紀錄 | admin/manager(範圍內)或訂單負責業務本人 |
 
 統一回應格式：`{ success: true, data, pagination? }` 或 `{ success: false, error }`
 
@@ -101,8 +107,9 @@
 | `project_logs` | 工程進度時間軸紀錄，`project_id`關聯`projects`，`created_by`關聯`users`(紀錄建立者) |
 | `suppliers` | 判頭/工人/供應商主檔，`type`(subcontractor分判判頭/worker自聘工人/supplier物料供應商/other其他)，`trade`工種，`status`(active合作中/inactive)，`created_by`關聯`users` |
 | `supplier_ratings` | 供應商評分紀錄，`supplier_id`關聯`suppliers`(CASCADE刪除)，`rating`(1-5星)，`order_id`可選關聯`orders`，`rated_by`關聯`users`(評分人) |
+| `project_suppliers` | 工程×供應商指派中介表，`project_id`關聯`projects`(CASCADE刪除)，`supplier_id`關聯`suppliers`，`status`(active進行中/completed已完成/cancelled已取消)，`trade`/`start_date`/`end_date`/`notes`，`assigned_by`關聯`users`(指派人) |
 
-`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。`accounting_entries` 表新增 `counterparty_name`（收款人/入帳名稱）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`、`migrations/0003_finance_accounting.sql`、`migrations/0004_projects.sql`、`migrations/0007_accounting_counterparty.sql`、`migrations/0008_suppliers.sql`
+`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。`accounting_entries` 表新增 `counterparty_name`（收款人/入帳名稱）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`、`migrations/0003_finance_accounting.sql`、`migrations/0004_projects.sql`、`migrations/0007_accounting_counterparty.sql`、`migrations/0008_suppliers.sql`、`migrations/0009_project_suppliers.sql`
 
 ## 公司資訊／業務預設值（依實際報價單範本校正）
 系統預設值依「一木工程有限公司 One Wood Limited」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端，兩處欄位需保持同步，無共用模組機制)：
@@ -135,7 +142,7 @@
 - 聯絡人/跟進紀錄的編輯與刪除（後端目前僅提供 GET+POST，尚無 PUT/DELETE，如需此功能須先擴充 `customers.ts`）
 - 財務/會計報表匯出(PDF)、會計分類的自訂管理介面(目前分類為程式碼內建清單)。會計報表已支援 CSV 匯出
 - 訂單收款狀態未反向顯示於「成交訂單」列表頁(`orders.js`)，目前需另外進入「財務」頁查看
-- 供應商管理與「工程管理」尚未串接（例如：工程指派判頭/工人、依工程自動建立評分提示），目前供應商資料與評分為獨立模組，`supplier_ratings.order_id` 欄位已預留關聯但前端尚無指派/自動化流程
+- 指派紀錄完成/取消後，尚無自動提示補登評分的流程（`supplier_ratings.order_id` 欄位已預留關聯，但指派完成與評分之間仍需人工分別操作）
 
 ## 建議下一步開發順序
 1. ~~報價建立/編輯頁 + 明細項目編輯器~~ ✅ 已完成
@@ -148,7 +155,8 @@
 8. ~~財務(訂單收款追蹤) / 會計(出入帳管理)~~ ✅ 已完成
 9. ~~會計出入帳增加收款人欄位 / 週期報表(週/月/年) / CSV匯出~~ ✅ 已完成
 10. ~~供應商管理(判頭/工人資料 + 評分系統)~~ ✅ 已完成
-11. Email 通知 / 財務會計報表PDF匯出 / 供應商與工程管理串接(指派判頭/工人)
+11. ~~供應商與工程管理串接(指派判頭/工人至工程、反向查詢供應商參與工程)~~ ✅ 已完成
+12. Email 通知 / 財務會計報表PDF匯出 / 指派完成後自動提示補登評分
 
 ## 測試帳號 (本地開發，密碼皆為 `OneWood2026#`)
 | Email | 角色 | 說明 |
@@ -189,7 +197,7 @@
 /projects                工程管理(施工進度總覽) ✅（所有角色皆可使用，依角色資料範圍過濾，可點擊追溯來源訂單）
 /projects/:id            工程詳情 ✅（工程基本資訊+進度時間軸；編輯設定/新增刪除紀錄僅限admin/manager(範圍內)或訂單負責業務本人，其餘僅可檢視）
 /suppliers               供應商管理(判頭/工人/供應商) ✅（所有角色皆可檢視，搜尋/類型/工種/狀態篩選，新增/編輯限manager+，刪除限admin）
-/suppliers/:id           供應商詳情 ✅（基本資料+評分紀錄列表+平均評分側欄，新增評分限manager+，刪除評分限admin）
+/suppliers/:id           供應商詳情 ✅（基本資料+評分紀錄列表+參與工程清單(反向查詢)+平均評分側欄，新增評分限manager+，刪除評分限admin）
 ```
 
 ## 專案結構
@@ -201,7 +209,8 @@ webapp/
 │   ├── 0003_finance_accounting.sql # 新增 order_payments(訂單收款) + accounting_entries(公司出入帳)
 │   ├── 0004_projects.sql          # 新增 projects(工程進度) + project_logs(進度時間軸) + 既有訂單回填
 │   ├── 0007_accounting_counterparty.sql # accounting_entries新增 counterparty_name(收款人/入帳名稱)欄位
-│   └── 0008_suppliers.sql         # 新增 suppliers(判頭/工人/供應商) + supplier_ratings(評分紀錄)
+│   ├── 0008_suppliers.sql         # 新增 suppliers(判頭/工人/供應商) + supplier_ratings(評分紀錄)
+│   └── 0009_project_suppliers.sql # 新增 project_suppliers(工程×供應商指派中介表)
 ├── seed.sql                       # 測試資料（裝修/水電工程業務情境：5個測試帳號、5個客戶、4筆報價）
 ├── src/
 │   ├── index.tsx                  # 主入口，掛載 API routes + 頁面 shell + jsPDF CDN
@@ -224,8 +233,8 @@ webapp/
 │       ├── reports.ts              # 報表分析統計摘要(KPI/Pipeline/趨勢/排行)
 │       ├── finance.ts              # 財務：訂單收款CRUD + 收款總覽
 │       ├── accounting.ts          # 會計：公司出入帳CRUD + 收支摘要(manager/admin only) + 週/月/年報表
-│       ├── projects.ts             # 工程管理：工程CRUD + 進度時間軸(依角色範圍查看，管理限本人/manager+/admin)
-│       └── suppliers.ts            # 供應商管理：判頭/工人/供應商CRUD + 評分紀錄子資源(新增/編輯限manager+，刪除限admin)
+│       ├── projects.ts             # 工程管理：工程CRUD + 進度時間軸 + 判頭/工人指派管理(依角色範圍查看，管理限本人/manager+/admin)
+│       └── suppliers.ts            # 供應商管理：判頭/工人/供應商CRUD + 評分紀錄子資源(新增/編輯限manager+，刪除限admin) + 參與工程反向查詢
 ├── public/
 │   └── static/
 │       ├── styles.css
@@ -253,8 +262,8 @@ webapp/
 │           ├── profile.js          # 個人資料設定頁（所有登入者）
 │           ├── finance.js          # 財務頁（訂單收款總覽 + 收款詳情/登記收款）
 │           ├── accounting.js      # 會計頁（公司出入帳，manager/admin only）
-│           ├── projects.js         # 工程管理頁（工程總覽/列表 + 詳情頁進度時間軸，管理限本人/manager+/admin）
-│           ├── suppliers.js        # 供應商管理頁（列表/新增編輯Modal + 詳情頁評分紀錄/星級評分元件）
+│           ├── projects.js         # 工程管理頁（工程總覽/列表 + 詳情頁進度時間軸/已指派判頭工人清單/指派Modal，管理限本人/manager+/admin）
+│           ├── suppliers.js        # 供應商管理頁（列表/新增編輯Modal + 詳情頁評分紀錄/星級評分元件/參與工程清單）
 │           └── placeholders.js     # 其餘頁面佔位
 ├── wrangler.jsonc                  # Cloudflare Pages + D1 設定
 ├── ecosystem.config.cjs            # PM2 設定
@@ -270,10 +279,10 @@ curl http://localhost:3000
 
 ## 部署
 - **Platform**: Cloudflare Workers（Genspark Hosted Deploy，`gsk hosted *`）+ D1
-- **Status**: ⚠️ 本機開發環境已完成並測試通過，**尚未部署最新版本至正式環境**（正式環境目前仍為較舊版本，缺少會計報表與供應商管理功能，待使用者確認後執行 `gsk hosted deploy`）
+- **Status**: ⚠️ 本機開發環境已完成並測試通過，**尚未部署最新版本至正式環境**（正式環境目前仍為較舊版本，缺少會計報表、供應商管理、以及工程×供應商指派整合三項功能，待使用者確認後執行 `gsk hosted deploy`）
 - **正式網址**: https://app.onewood.com.hk （自訂網域，綁定至 Hosted Worker）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-08-10（會計出入帳新增收款人/入帳名稱欄位與週/月/年報表(含CSV匯出)；新增供應商管理功能，維護判頭/工人/供應商資料及評分系統）
+- **Last Updated**: 2026-08-10（會計出入帳新增收款人/入帳名稱欄位與週/月/年報表(含CSV匯出)；新增供應商管理功能，維護判頭/工人/供應商資料及評分系統；新增工程×供應商指派整合，可於工程詳情頁指派判頭/工人並反向於供應商詳情頁查看參與工程）
 
 ### ⚠️ 首次部署 / 重建 D1・Worker 後的固定檢查清單
 
