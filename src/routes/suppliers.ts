@@ -135,8 +135,9 @@ suppliers.post('/', requireRole('admin', 'manager'), async (c) => {
 
   const result = await c.env.DB.prepare(
     `INSERT INTO suppliers
-      (name, type, trade, contact_person, phone, mobile, id_number, address, bank_account, status, notes, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (name, type, trade, contact_person, phone, mobile, id_number, address, bank_account,
+       bank_name, bank_account_name, bank_account_no, fps_id, status, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       body.name,
@@ -148,6 +149,10 @@ suppliers.post('/', requireRole('admin', 'manager'), async (c) => {
       body.id_number || null,
       body.address || null,
       body.bank_account || null,
+      body.bank_name || null,
+      body.bank_account_name || null,
+      body.bank_account_no || null,
+      body.fps_id || null,
       body.status === 'inactive' ? 'inactive' : 'active',
       body.notes || null,
       user.sub
@@ -169,7 +174,8 @@ suppliers.put('/:id', requireRole('admin', 'manager'), async (c) => {
   const existing = await c.env.DB.prepare('SELECT id FROM suppliers WHERE id = ?').bind(id).first()
   if (!existing) return fail(c, '找不到此供應商/判頭/工人資料', 404)
 
-  const fields = ['name', 'type', 'trade', 'contact_person', 'phone', 'mobile', 'id_number', 'address', 'bank_account', 'status', 'notes']
+  const fields = ['name', 'type', 'trade', 'contact_person', 'phone', 'mobile', 'id_number', 'address', 'bank_account',
+    'bank_name', 'bank_account_name', 'bank_account_no', 'fps_id', 'status', 'notes']
   const updates: string[] = []
   const params: any[] = []
   for (const f of fields) {

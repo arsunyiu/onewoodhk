@@ -266,9 +266,28 @@ function openSupplierModal(supplier) {
             <label class="block text-xs font-medium text-gray-500 mb-1">地址</label>
             <input id="sm-address" type="text" value="${Fmt.escapeHtml(s.address || '')}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
           </div>
+          <div class="col-span-2 border-t border-gray-100 pt-3 mt-1">
+            <p class="text-xs font-semibold text-gray-500 mb-2"><i class="fas fa-building-columns mr-1 text-primary-600"></i>轉數資料（銀行過數 / FPS 轉數快）</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">銀行名稱</label>
+            <input id="sm-bank-name" type="text" value="${Fmt.escapeHtml(s.bank_name || '')}" placeholder="例：滙豐、中銀香港" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">銀行戶口名</label>
+            <input id="sm-bank-account-name" type="text" value="${Fmt.escapeHtml(s.bank_account_name || '')}" placeholder="須與銀行資料一致" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">銀行戶口號碼</label>
+            <input id="sm-bank-account-no" type="text" value="${Fmt.escapeHtml(s.bank_account_no || '')}" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">FPS 轉數快識別碼</label>
+            <input id="sm-fps-id" type="text" value="${Fmt.escapeHtml(s.fps_id || '')}" placeholder="手機號碼／電郵／FPS ID" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
           <div class="col-span-2">
-            <label class="block text-xs font-medium text-gray-500 mb-1">收款銀行帳戶</label>
-            <input id="sm-bank" type="text" value="${Fmt.escapeHtml(s.bank_account || '')}" placeholder="選填，方便付款作業" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">其他收款備註</label>
+            <input id="sm-bank" type="text" value="${Fmt.escapeHtml(s.bank_account || '')}" placeholder="選填，如分行代碼等其他補充資料" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
           </div>
           <div class="col-span-2">
             <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
@@ -318,6 +337,10 @@ function openSupplierModal(supplier) {
       id_number: document.getElementById('sm-id-number').value.trim() || null,
       address: document.getElementById('sm-address').value.trim() || null,
       bank_account: document.getElementById('sm-bank').value.trim() || null,
+      bank_name: document.getElementById('sm-bank-name').value.trim() || null,
+      bank_account_name: document.getElementById('sm-bank-account-name').value.trim() || null,
+      bank_account_no: document.getElementById('sm-bank-account-no').value.trim() || null,
+      fps_id: document.getElementById('sm-fps-id').value.trim() || null,
       notes: document.getElementById('sm-notes').value.trim() || null,
       status: document.getElementById('sm-active').checked ? 'active' : 'inactive'
     }
@@ -330,7 +353,14 @@ function openSupplierModal(supplier) {
         showToast('已新增供應商/判頭資料')
       }
       closeModal()
-      loadSupplierList()
+      // 編輯來源可能是列表頁或詳情頁，依當前所在頁面刷新對應資料
+      if (document.getElementById('sd-projects-list') && SupplierDetailData) {
+        const res = await API.get(`/suppliers/${SupplierDetailData.id}`)
+        SupplierDetailData = res.data
+        renderSupplierDetail(SupplierDetailData)
+      } else {
+        loadSupplierList()
+      }
     } catch (err) {
       showToast(err.message, 'error')
     }
@@ -400,9 +430,22 @@ function renderSupplierDetail(s) {
               <div><p class="text-xs text-gray-400">手機</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.mobile || '-')}</p></div>
               <div><p class="text-xs text-gray-400">身份證/商業登記號</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.id_number || '-')}</p></div>
               <div class="col-span-2"><p class="text-xs text-gray-400">地址</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.address || '-')}</p></div>
-              <div class="col-span-2"><p class="text-xs text-gray-400">收款銀行帳戶</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.bank_account || '-')}</p></div>
               ${s.notes ? `<div class="col-span-2"><p class="text-xs text-gray-400">備註</p><p class="text-gray-700 mt-0.5 whitespace-pre-wrap">${Fmt.escapeHtml(s.notes)}</p></div>` : ''}
             </div>
+          </div>
+
+          <!-- 轉數資料（銀行過數 / FPS 轉數快） -->
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-building-columns mr-1.5 text-primary-600"></i>轉數資料</h2>
+            ${(s.bank_name || s.bank_account_name || s.bank_account_no || s.fps_id || s.bank_account)
+              ? `<div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><p class="text-xs text-gray-400">銀行名稱</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.bank_name || '-')}</p></div>
+                  <div><p class="text-xs text-gray-400">銀行戶口名</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.bank_account_name || '-')}</p></div>
+                  <div><p class="text-xs text-gray-400">銀行戶口號碼</p><p class="text-gray-700 mt-0.5 font-mono">${Fmt.escapeHtml(s.bank_account_no || '-')}</p></div>
+                  <div><p class="text-xs text-gray-400">FPS 轉數快識別碼</p><p class="text-gray-700 mt-0.5 font-mono">${Fmt.escapeHtml(s.fps_id || '-')}</p></div>
+                  ${s.bank_account ? `<div class="col-span-2"><p class="text-xs text-gray-400">其他收款備註</p><p class="text-gray-700 mt-0.5">${Fmt.escapeHtml(s.bank_account)}</p></div>` : ''}
+                </div>`
+              : '<p class="text-sm text-gray-400 py-2">尚未登記轉數資料</p>'}
           </div>
 
           <!-- 評分歷史 -->
