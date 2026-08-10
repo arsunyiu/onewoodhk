@@ -263,6 +263,15 @@ function renderQuoteItemsTable() {
   const tbody = document.getElementById('qf-items-body')
   if (!tbody) return
 
+  // 分類下拉選單需包含標準分類（PRODUCT_CATEGORIES）以及產品目錄中實際使用的自訂分類（如「Z. 客制工程」），
+  // 否則自訂分類的產品會因為分類選單中找不到對應選項而永遠無法被選取（見：新增產品後在報價單沒有選項）
+  const customCategories = [...new Set(
+    QuoteFormState.products
+      .map((p) => p.category)
+      .filter((c) => c && !PRODUCT_CATEGORIES.includes(c))
+  )]
+  const categoryOptionsHtml = [...PRODUCT_CATEGORIES, ...customCategories]
+
   tbody.innerHTML = QuoteFormState.items
     .map((it, idx) => {
       // 小計預設為 數量*單價*(1-折扣%) 自動計算，但可由使用者手動覆寫（例如整批工程報價需微調金額）
@@ -278,7 +287,7 @@ function renderQuoteItemsTable() {
         <td class="px-3 py-2 align-top">
           <select class="item-category w-full border border-gray-200 rounded px-2 py-1 text-xs" ${editable ? '' : 'disabled'}>
             <option value="">請先選擇分類</option>
-            ${PRODUCT_CATEGORIES.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
+            ${categoryOptionsHtml.map((c) => `<option value="${Fmt.escapeHtml(c)}" ${it.category === c ? 'selected' : ''}>${Fmt.escapeHtml(categoryLabelWithLetter(c))}</option>`).join('')}
           </select>
         </td>
         <td class="px-3 py-2 align-top">
