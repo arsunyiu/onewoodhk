@@ -8,7 +8,8 @@ function renderLayout(activeKey) {
     { key: 'customers', href: '/customers', icon: 'fa-building-user', label: '客戶管理' },
     { key: 'quotes', href: '/quotes', icon: 'fa-file-invoice-dollar', label: '報價管理' },
     { key: 'orders', href: '/orders', icon: 'fa-cart-shopping', label: '成交訂單' },
-    { key: 'projects', href: '/projects', icon: 'fa-helmet-safety', label: '工程管理' }
+    { key: 'projects', href: '/projects', icon: 'fa-helmet-safety', label: '工程管理' },
+    { key: 'suppliers', href: '/suppliers', icon: 'fa-user-gear', label: '供應商管理' }
   ]
   if (Auth.isManagerUp()) {
     menus.push({ key: 'finance', href: '/finance', icon: 'fa-hand-holding-dollar', label: '財務管理' })
