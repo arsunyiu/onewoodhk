@@ -188,6 +188,8 @@ Pages.projectDetail = async function (id) {
   await loadProjectDetail(id)
 }
 
+let ProjectAssignments = []
+
 async function loadProjectDetail(id) {
   const el = document.getElementById('proj-detail-content')
   if (!el) return
@@ -201,10 +203,190 @@ async function loadProjectDetail(id) {
         ProjectUserOptions = []
       }
     }
+    try {
+      const assignRes = await API.get(`/projects/${id}/assignments`)
+      ProjectAssignments = assignRes.data
+    } catch (e) {
+      ProjectAssignments = []
+    }
     renderProjectDetail(res.data)
   } catch (err) {
     el.innerHTML = `<div class="text-red-400 text-sm">${err.message}</div>`
   }
+}
+
+async function reloadProjectAssignments() {
+  try {
+    const assignRes = await API.get(`/projects/${ProjectDetailId}/assignments`)
+    ProjectAssignments = assignRes.data
+    renderProjectAssignmentsList()
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+const PROJECT_SUPPLIER_STATUS_META = {
+  active: { label: '進行中', color: 'bg-primary-100 text-primary-700' },
+  completed: { label: '已完成', color: 'bg-green-100 text-green-700' },
+  cancelled: { label: '已取消', color: 'bg-gray-200 text-gray-500' }
+}
+
+function renderProjectAssignmentsList() {
+  const el = document.getElementById('proj-assignments-list')
+  if (!el) return
+  const canManage = document.getElementById('proj-assign-btn') !== null
+  if (!ProjectAssignments.length) {
+    el.innerHTML = '<p class="text-sm text-gray-400 py-4 text-center">尚未指派判頭/工人</p>'
+    return
+  }
+  el.innerHTML = ProjectAssignments
+    .map((a) => {
+      const meta = PROJECT_SUPPLIER_STATUS_META[a.status] || PROJECT_SUPPLIER_STATUS_META.active
+      const typeMeta = SUPPLIER_TYPE_META_REF[a.supplier_type] || { label: a.supplier_type }
+      const contact = [a.supplier_phone, a.supplier_mobile].filter(Boolean).join(' / ')
+      const ratingHtml = typeof renderStars === 'function' && a.supplier_rating_count > 0
+        ? renderStars(a.supplier_avg_rating, a.supplier_rating_count)
+        : ''
+      return `
+      <div class="flex items-start justify-between py-3 border-b border-gray-50 last:border-0">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <a href="/suppliers/${a.supplier_id}" class="text-sm font-medium text-primary-600 hover:underline">${Fmt.escapeHtml(a.supplier_name)}</a>
+            <span class="text-xs text-gray-400">${Fmt.escapeHtml(typeMeta.label)}</span>
+            ${statusBadge(meta)}
+          </div>
+          <p class="text-xs text-gray-500 mt-1">${Fmt.escapeHtml(a.trade || '-')}${contact ? ' · ' + Fmt.escapeHtml(contact) : ''}</p>
+          ${ratingHtml ? `<div class="mt-1">${ratingHtml}</div>` : ''}
+          ${(a.start_date || a.end_date) ? `<p class="text-xs text-gray-400 mt-1">${Fmt.date(a.start_date) || '-'} ~ ${Fmt.date(a.end_date) || '-'}</p>` : ''}
+          ${a.notes ? `<p class="text-xs text-gray-400 mt-1">${Fmt.escapeHtml(a.notes)}</p>` : ''}
+        </div>
+        ${canManage ? `
+        <div class="flex items-center gap-2 ml-2 shrink-0">
+          <select class="proj-assign-status-select text-xs border border-gray-200 rounded px-1.5 py-1" data-id="${a.id}">
+            ${Object.entries(PROJECT_SUPPLIER_STATUS_META).map(([k, v]) => `<option value="${k}" ${a.status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+          <button class="proj-assign-remove-btn text-red-300 hover:text-red-500 text-xs" data-id="${a.id}"><i class="fas fa-trash"></i></button>
+        </div>` : ''}
+      </div>`
+    })
+    .join('')
+
+  if (canManage) {
+    el.querySelectorAll('.proj-assign-status-select').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        try {
+          await API.put(`/projects/assignments/${sel.dataset.id}`, { status: sel.value })
+          showToast('指派狀態已更新')
+          reloadProjectAssignments()
+        } catch (err) {
+          showToast(err.message, 'error')
+        }
+      })
+    })
+    el.querySelectorAll('.proj-assign-remove-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('確定要移除此指派紀錄嗎？')) return
+        try {
+          await API.delete(`/projects/assignments/${btn.dataset.id}`)
+          showToast('已移除指派')
+          reloadProjectAssignments()
+        } catch (err) {
+          showToast(err.message, 'error')
+        }
+      })
+    })
+  }
+}
+
+// 供工程頁引用（避免與 suppliers.js 的 SUPPLIER_TYPE_META 重複宣告造成衝突，改用參照別名）
+const SUPPLIER_TYPE_META_REF = {
+  subcontractor: { label: '分判/判頭' },
+  worker: { label: '自聘工人' },
+  supplier: { label: '物料供應商' },
+  other: { label: '其他' }
+}
+
+let ProjectSupplierOptions = []
+
+function openAssignSupplierModal() {
+  openModal(`
+    <div class="p-5">
+      <h3 class="text-base font-bold text-gray-800 mb-4">指派判頭/工人/供應商</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">選擇判頭/工人/供應商 <span class="text-red-500">*</span></label>
+          <select id="am-supplier" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+            <option value="">載入中...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">本次負責工種（選填，預設帶入該對象工種）</label>
+          <input id="am-trade" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">開始日期</label>
+            <input id="am-start" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">結束日期</label>
+            <input id="am-end" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
+          <textarea id="am-notes" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="am-cancel" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">取消</button>
+        <button id="am-submit" class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg">確認指派</button>
+      </div>
+    </div>`)
+
+  document.getElementById('am-cancel').addEventListener('click', closeModal)
+
+  ;(async () => {
+    try {
+      const res = await API.get('/suppliers', { status: 'active', sort: 'name' })
+      ProjectSupplierOptions = res.data
+      const sel = document.getElementById('am-supplier')
+      sel.innerHTML =
+        '<option value="">請選擇</option>' +
+        ProjectSupplierOptions
+          .map((s) => `<option value="${s.id}" data-trade="${Fmt.escapeHtml(s.trade || '')}">${Fmt.escapeHtml(s.name)}（${SUPPLIER_TYPE_META_REF[s.type]?.label || s.type}${s.trade ? ' · ' + Fmt.escapeHtml(s.trade) : ''}）</option>`)
+          .join('')
+      sel.addEventListener('change', () => {
+        const opt = sel.options[sel.selectedIndex]
+        document.getElementById('am-trade').value = opt?.dataset.trade || ''
+      })
+    } catch (err) {
+      document.getElementById('am-supplier').innerHTML = `<option value="">${err.message}</option>`
+    }
+  })()
+
+  document.getElementById('am-submit').addEventListener('click', async () => {
+    const supplierId = document.getElementById('am-supplier').value
+    if (!supplierId) {
+      showToast('請選擇要指派的判頭/工人/供應商', 'error')
+      return
+    }
+    const payload = {
+      supplier_id: Number(supplierId),
+      trade: document.getElementById('am-trade').value.trim() || null,
+      start_date: document.getElementById('am-start').value || null,
+      end_date: document.getElementById('am-end').value || null,
+      notes: document.getElementById('am-notes').value.trim() || null
+    }
+    try {
+      await API.post(`/projects/${ProjectDetailId}/assignments`, payload)
+      showToast('已指派')
+      closeModal()
+      reloadProjectAssignments()
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+  })
 }
 
 function renderProjectDetail(d) {
@@ -274,6 +456,16 @@ function renderProjectDetail(d) {
                     .join('')
                 : `<p class="text-center text-gray-400 py-6 text-sm">尚無進度紀錄</p>`
             }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700"><i class="fas fa-user-gear mr-1.5 text-primary-600"></i>已指派判頭/工人</h3>
+            ${canManage ? `<button id="proj-assign-btn" class="text-primary-600 hover:underline text-xs font-medium"><i class="fas fa-plus mr-1"></i>指派</button>` : ''}
+          </div>
+          <div id="proj-assignments-list">
+            <p class="text-sm text-gray-400 py-4 text-center"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
           </div>
         </div>
       </div>
@@ -359,7 +551,10 @@ function renderProjectDetail(d) {
   if (canManage) {
     document.getElementById('log-submit').addEventListener('click', submitProjectLog)
     document.getElementById('edit-submit').addEventListener('click', submitProjectEdit)
+    const assignBtn = document.getElementById('proj-assign-btn')
+    if (assignBtn) assignBtn.addEventListener('click', openAssignSupplierModal)
   }
+  renderProjectAssignmentsList()
 }
 
 async function submitProjectLog() {

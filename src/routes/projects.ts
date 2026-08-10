@@ -219,6 +219,157 @@ projects.post('/:id/logs', async (c) => {
   return ok(c, log, undefined, 201)
 })
 
+// ------------------------------------------------------------
+// 工程指派（判頭/工人/供應商 assignments）
+// 查看：所有可查看該工程的人皆可看到已指派名單；
+// 新增/移除/更新指派：僅限訂單負責業務本人或 manager/admin（同 canManageProject）
+// ------------------------------------------------------------
+
+// GET /api/projects/:id/assignments — 取得某工程已指派的判頭/工人清單
+projects.get('/:id/assignments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = parseInt(c.req.param('id'))
+  const ownerIds = await getVisibleOwnerIds(c.env.DB, user)
+  const { clause, params } = ownerScopeClause(ownerIds, 'o.owner_id')
+
+  // 先確認使用者對此工程有查看權限（比照 GET /:id 的範圍檢查）
+  const project = await c.env.DB.prepare(
+    `SELECT p.id FROM projects p JOIN orders o ON o.id = p.order_id WHERE p.id = ? AND ${clause}`
+  )
+    .bind(id, ...params)
+    .first<any>()
+  if (!project) return fail(c, '找不到工程或無權限查看', 404)
+
+  const rows = await c.env.DB.prepare(
+    `SELECT ps.*, s.name as supplier_name, s.type as supplier_type, s.phone as supplier_phone,
+            s.mobile as supplier_mobile, u.name as assigned_by_name,
+            COALESCE(ROUND((SELECT AVG(r.rating) FROM supplier_ratings r WHERE r.supplier_id = s.id), 1), 0) as supplier_avg_rating,
+            (SELECT COUNT(*) FROM supplier_ratings r WHERE r.supplier_id = s.id) as supplier_rating_count
+     FROM project_suppliers ps
+     JOIN suppliers s ON s.id = ps.supplier_id
+     LEFT JOIN users u ON u.id = ps.assigned_by
+     WHERE ps.project_id = ?
+     ORDER BY ps.status = 'active' DESC, ps.created_at DESC`
+  )
+    .bind(id)
+    .all<any>()
+
+  return ok(c, rows.results)
+})
+
+// POST /api/projects/:id/assignments — 指派判頭/工人至工程
+projects.post('/:id/assignments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = parseInt(c.req.param('id'))
+
+  const existing = await c.env.DB.prepare(
+    `SELECT p.*, o.owner_id FROM projects p JOIN orders o ON o.id = p.order_id WHERE p.id = ?`
+  )
+    .bind(id)
+    .first<any>()
+  if (!existing) return fail(c, '找不到工程', 404)
+
+  const allowed = await canManageProject(c.env.DB, user, existing.owner_id)
+  if (!allowed) return fail(c, '權限不足，無法指派判頭/工人', 403)
+
+  const body = await c.req.json().catch(() => ({}))
+  const supplierId = parseInt(body.supplier_id)
+  if (!supplierId) return fail(c, '請選擇要指派的判頭/工人/供應商', 400)
+
+  const supplier = await c.env.DB.prepare('SELECT id FROM suppliers WHERE id = ?').bind(supplierId).first()
+  if (!supplier) return fail(c, '找不到該供應商/判頭資料', 404)
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO project_suppliers (project_id, supplier_id, trade, status, start_date, end_date, notes, assigned_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      id,
+      supplierId,
+      body.trade ? String(body.trade).trim() : null,
+      ['active', 'completed', 'cancelled'].includes(body.status) ? body.status : 'active',
+      body.start_date || null,
+      body.end_date || null,
+      body.notes ? String(body.notes).trim() : null,
+      user.sub
+    )
+    .run()
+
+  const assignment = await c.env.DB.prepare(
+    `SELECT ps.*, s.name as supplier_name, s.type as supplier_type
+     FROM project_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id WHERE ps.id = ?`
+  )
+    .bind(result.meta.last_row_id)
+    .first()
+  return ok(c, assignment, undefined, 201)
+})
+
+// PUT /api/projects/assignments/:assignmentId — 更新指派紀錄（狀態/期間/工種/備註）
+projects.put('/assignments/:assignmentId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const assignmentId = parseInt(c.req.param('assignmentId'))
+
+  const existing = await c.env.DB.prepare(
+    `SELECT ps.*, o.owner_id FROM project_suppliers ps
+     JOIN projects p ON p.id = ps.project_id
+     JOIN orders o ON o.id = p.order_id
+     WHERE ps.id = ?`
+  )
+    .bind(assignmentId)
+    .first<any>()
+  if (!existing) return fail(c, '找不到指派紀錄', 404)
+
+  const allowed = await canManageProject(c.env.DB, user, existing.owner_id)
+  if (!allowed) return fail(c, '權限不足，無法更新指派紀錄', 403)
+
+  const body = await c.req.json().catch(() => ({}))
+  const updates: string[] = []
+  const params: any[] = []
+
+  if (body.status !== undefined) {
+    if (!['active', 'completed', 'cancelled'].includes(body.status)) return fail(c, '指派狀態無效', 400)
+    updates.push('status = ?')
+    params.push(body.status)
+  }
+  for (const f of ['trade', 'start_date', 'end_date', 'notes']) {
+    if (body[f] !== undefined) {
+      updates.push(`${f} = ?`)
+      params.push(body[f] || null)
+    }
+  }
+  if (!updates.length) return fail(c, '沒有可更新的欄位', 400)
+  updates.push('updated_at = CURRENT_TIMESTAMP')
+
+  await c.env.DB.prepare(`UPDATE project_suppliers SET ${updates.join(', ')} WHERE id = ?`)
+    .bind(...params, assignmentId)
+    .run()
+
+  const updated = await c.env.DB.prepare('SELECT * FROM project_suppliers WHERE id = ?').bind(assignmentId).first()
+  return ok(c, updated)
+})
+
+// DELETE /api/projects/assignments/:assignmentId — 移除指派
+projects.delete('/assignments/:assignmentId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const assignmentId = parseInt(c.req.param('assignmentId'))
+
+  const existing = await c.env.DB.prepare(
+    `SELECT ps.*, o.owner_id FROM project_suppliers ps
+     JOIN projects p ON p.id = ps.project_id
+     JOIN orders o ON o.id = p.order_id
+     WHERE ps.id = ?`
+  )
+    .bind(assignmentId)
+    .first<any>()
+  if (!existing) return fail(c, '找不到指派紀錄', 404)
+
+  const allowed = await canManageProject(c.env.DB, user, existing.owner_id)
+  if (!allowed) return fail(c, '權限不足，無法移除指派紀錄', 403)
+
+  await c.env.DB.prepare('DELETE FROM project_suppliers WHERE id = ?').bind(assignmentId).run()
+  return ok(c, { id: assignmentId })
+})
+
 // DELETE /api/projects/logs/:logId — 刪除進度紀錄（manager/admin 或建立者本人）
 projects.delete('/logs/:logId', async (c) => {
   const user = c.get('user') as JwtPayload

@@ -429,6 +429,14 @@ function renderSupplierDetail(s) {
                 : '<p class="text-sm text-gray-400 py-6 text-center">尚無評分紀錄</p>'}
             </div>
           </div>
+
+          <!-- 參與工程 -->
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-helmet-safety mr-1.5 text-primary-600"></i>參與工程</h2>
+            <div id="sd-projects-list">
+              <p class="text-sm text-gray-400 py-4 text-center"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
+            </div>
+          </div>
         </div>
 
         <!-- 側邊：評分總覽 -->
@@ -452,6 +460,55 @@ function renderSupplierDetail(s) {
       btn.addEventListener('click', () => deleteSupplierRating(s.id, Number(btn.dataset.id)))
     })
   }
+
+  loadSupplierProjects(s.id)
+}
+
+// 供應商參與工程（反向查詢 project_suppliers）
+async function loadSupplierProjects(supplierId) {
+  const el = document.getElementById('sd-projects-list')
+  if (!el) return
+  try {
+    const res = await API.get(`/suppliers/${supplierId}/projects`)
+    renderSupplierProjectsList(res.data)
+  } catch (err) {
+    el.innerHTML = `<p class="text-sm text-red-400 py-4 text-center">${err.message}</p>`
+  }
+}
+
+function renderSupplierProjectsList(list) {
+  const el = document.getElementById('sd-projects-list')
+  if (!el) return
+  if (!list.length) {
+    el.innerHTML = '<p class="text-sm text-gray-400 py-4 text-center">尚未參與任何工程</p>'
+    return
+  }
+  const assignMeta = typeof PROJECT_SUPPLIER_STATUS_META !== 'undefined'
+    ? PROJECT_SUPPLIER_STATUS_META
+    : { active: { label: '進行中', color: 'bg-primary-100 text-primary-700' }, completed: { label: '已完成', color: 'bg-green-100 text-green-700' }, cancelled: { label: '已取消', color: 'bg-gray-200 text-gray-500' } }
+  const projMeta = typeof PROJECT_STATUS_META !== 'undefined'
+    ? PROJECT_STATUS_META
+    : { not_started: { label: '未開始', color: 'bg-gray-200 text-gray-600' }, in_progress: { label: '進行中', color: 'bg-primary-100 text-primary-700' }, paused: { label: '暫停', color: 'bg-yellow-100 text-yellow-700' }, completed: { label: '已完成', color: 'bg-green-100 text-green-700' }, cancelled: { label: '已取消', color: 'bg-red-100 text-red-700' } }
+
+  el.innerHTML = list
+    .map((a) => {
+      const aMeta = assignMeta[a.status] || assignMeta.active
+      const pMeta = projMeta[a.project_status] || projMeta.not_started
+      return `
+      <div class="py-3 border-b border-gray-50 last:border-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="/projects/${a.project_id}" class="text-sm font-medium text-primary-600 hover:underline">${Fmt.escapeHtml(a.order_no || '訂單 #' + a.project_id)}</a>
+          <span class="text-xs text-gray-500">${Fmt.escapeHtml(a.company_name || '-')}</span>
+          ${statusBadge(pMeta)}
+          ${statusBadge(aMeta)}
+        </div>
+        <p class="text-xs text-gray-500 mt-1">${Fmt.escapeHtml(a.site_address || '-')}${a.trade ? ' · ' + Fmt.escapeHtml(a.trade) : ''}</p>
+        <div class="mt-1.5">${progressBar(a.progress_percent)}</div>
+        ${(a.start_date || a.end_date) ? `<p class="text-xs text-gray-400 mt-1">${Fmt.date(a.start_date) || '-'} ~ ${Fmt.date(a.end_date) || '-'}</p>` : ''}
+        ${a.notes ? `<p class="text-xs text-gray-400 mt-1">${Fmt.escapeHtml(a.notes)}</p>` : ''}
+      </div>`
+    })
+    .join('')
 }
 
 function openRatingModal(supplierId) {

@@ -103,6 +103,28 @@ suppliers.get('/:id', async (c) => {
   })
 })
 
+// GET /api/suppliers/:id/projects — 查詢此判頭/工人參與過的工程（反向查詢 project_suppliers）
+suppliers.get('/:id/projects', async (c) => {
+  const id = c.req.param('id')
+  const existing = await c.env.DB.prepare('SELECT id FROM suppliers WHERE id = ?').bind(id).first()
+  if (!existing) return fail(c, '找不到此供應商/判頭/工人資料', 404)
+
+  const rows = await c.env.DB.prepare(
+    `SELECT ps.*, p.status as project_status, p.progress_percent, p.site_address,
+            o.order_no, c.company_name
+     FROM project_suppliers ps
+     JOIN projects p ON p.id = ps.project_id
+     JOIN orders o ON o.id = p.order_id
+     JOIN customers c ON c.id = o.customer_id
+     WHERE ps.supplier_id = ?
+     ORDER BY ps.status = 'active' DESC, ps.created_at DESC`
+  )
+    .bind(id)
+    .all<any>()
+
+  return ok(c, rows.results)
+})
+
 // POST /api/suppliers — 新增（僅 admin/manager）
 suppliers.post('/', requireRole('admin', 'manager'), async (c) => {
   const user = c.get('user') as JwtPayload
