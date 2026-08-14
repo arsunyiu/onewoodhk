@@ -4,6 +4,7 @@ import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { verifyPassword, hashPassword } from '../utils/crypto'
 import { authMiddleware } from '../middleware/auth'
+import { logAudit } from '../utils/audit'
 
 const auth = new Hono<{ Bindings: Bindings }>()
 
@@ -14,22 +15,48 @@ auth.post('/login', async (c) => {
     return fail(c, '請輸入帳號與密碼', 400)
   }
   const { email, password } = body
+  const normalizedEmail = String(email).toLowerCase().trim()
 
   const user = await c.env.DB.prepare(
     'SELECT id, name, email, password_hash, role, manager_id, is_active FROM users WHERE email = ?'
   )
-    .bind(email.toLowerCase().trim())
+    .bind(normalizedEmail)
     .first<any>()
 
   if (!user) {
+    await logAudit(c, {
+      user_id: null,
+      user_email: normalizedEmail,
+      action: 'login_failed',
+      module: 'auth',
+      description: '登入失敗：帳號不存在'
+    })
     return fail(c, '帳號或密碼錯誤', 401)
   }
   if (!user.is_active) {
+    await logAudit(c, {
+      user_id: user.id,
+      user_name: user.name,
+      user_email: user.email,
+      role: user.role,
+      action: 'login_failed',
+      module: 'auth',
+      description: '登入失敗：帳號已被停用'
+    })
     return fail(c, '此帳號已被停用，請聯繫管理員', 403)
   }
 
   const valid = await verifyPassword(password, user.password_hash)
   if (!valid) {
+    await logAudit(c, {
+      user_id: user.id,
+      user_name: user.name,
+      user_email: user.email,
+      role: user.role,
+      action: 'login_failed',
+      module: 'auth',
+      description: '登入失敗：密碼錯誤'
+    })
     return fail(c, '帳號或密碼錯誤', 401)
   }
 
@@ -42,6 +69,16 @@ auth.post('/login', async (c) => {
     exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 天
   }
   const token = await sign(payload as any, c.env.JWT_SECRET)
+
+  await logAudit(c, {
+    user_id: user.id,
+    user_name: user.name,
+    user_email: user.email,
+    role: user.role,
+    action: 'login_success',
+    module: 'auth',
+    description: '登入成功'
+  })
 
   return ok(c, {
     token,

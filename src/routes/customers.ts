@@ -3,6 +3,7 @@ import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware } from '../middleware/auth'
 import { getVisibleOwnerIds, ownerScopeClause } from '../utils/scope'
+import { logAuditFromUser } from '../utils/audit'
 
 const customers = new Hono<{ Bindings: Bindings }>()
 customers.use('*', authMiddleware)
@@ -188,6 +189,7 @@ customers.delete('/:id', async (c) => {
   }
 
   await c.env.DB.prepare('DELETE FROM customers WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'customers', id, `刪除客戶：${existing.company_name || id}`)
   return ok(c, { deleted: true })
 })
 

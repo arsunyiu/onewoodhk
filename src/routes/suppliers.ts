@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware, requireRole } from '../middleware/auth'
+import { logAuditFromUser } from '../utils/audit'
 
 const suppliers = new Hono<{ Bindings: Bindings }>()
 suppliers.use('*', authMiddleware)
@@ -162,6 +163,7 @@ suppliers.post('/', requireRole('admin', 'manager'), async (c) => {
   const supplier = await c.env.DB.prepare('SELECT * FROM suppliers WHERE id = ?')
     .bind(result.meta.last_row_id)
     .first()
+  await logAuditFromUser(c, user, 'create', 'suppliers', result.meta.last_row_id, `新增供應商/判頭/工人：${body.name}`)
   return ok(c, supplier, undefined, 201)
 })
 
@@ -189,15 +191,19 @@ suppliers.put('/:id', requireRole('admin', 'manager'), async (c) => {
 
   await c.env.DB.prepare(`UPDATE suppliers SET ${updates.join(', ')} WHERE id = ?`).bind(...params, id).run()
   const updated = await c.env.DB.prepare('SELECT * FROM suppliers WHERE id = ?').bind(id).first()
+  const suUser = c.get('user') as JwtPayload
+  await logAuditFromUser(c, suUser, 'update', 'suppliers', id, `修改供應商/判頭/工人資料：${(updated as any)?.name || id}`)
   return ok(c, updated)
 })
 
 // DELETE /api/suppliers/:id — 刪除（僅 admin）
 suppliers.delete('/:id', requireRole('admin'), async (c) => {
+  const user = c.get('user') as JwtPayload
   const id = c.req.param('id')
-  const existing = await c.env.DB.prepare('SELECT id FROM suppliers WHERE id = ?').bind(id).first()
+  const existing = await c.env.DB.prepare('SELECT id, name FROM suppliers WHERE id = ?').bind(id).first<any>()
   if (!existing) return fail(c, '找不到此供應商/判頭/工人資料', 404)
   await c.env.DB.prepare('DELETE FROM suppliers WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'suppliers', id, `刪除供應商/判頭/工人：${existing.name}`)
   return ok(c, { deleted: true })
 })
 

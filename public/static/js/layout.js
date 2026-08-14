@@ -20,6 +20,7 @@ function renderLayout(activeKey) {
   if (Auth.isAdmin()) {
     menus.push({ key: 'users', href: '/users', icon: 'fa-users-gear', label: '使用者管理' })
     menus.push({ key: 'roles', href: '/roles', icon: 'fa-user-shield', label: '角色管理' })
+    menus.push({ key: 'audit', href: '/audit-log', icon: 'fa-clipboard-list', label: '審計紀錄' })
   }
 
   const menuHtml = menus

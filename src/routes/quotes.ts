@@ -4,6 +4,7 @@ import { ok, fail } from '../utils/response'
 import { authMiddleware } from '../middleware/auth'
 import { getVisibleOwnerIds, ownerScopeClause } from '../utils/scope'
 import { COMPANY_INFO } from '../types/company'
+import { logAuditFromUser } from '../utils/audit'
 
 const quotes = new Hono<{ Bindings: Bindings }>()
 quotes.use('*', authMiddleware)
@@ -308,6 +309,7 @@ quotes.delete('/:id', async (c) => {
   if (existing.status !== 'draft') return fail(c, '僅草稿狀態可刪除', 400)
 
   await c.env.DB.prepare('DELETE FROM quotes WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'quotes', id, `刪除報價單：${existing.quote_no || id}`)
   return ok(c, { deleted: true })
 })
 

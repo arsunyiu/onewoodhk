@@ -25,6 +25,7 @@ const routes = [
   { pattern: /^\/accounting$/, page: () => Pages.accounting() },
   { pattern: /^\/users$/, page: () => Pages.users() },
   { pattern: /^\/roles$/, page: () => Pages.roles() },
+  { pattern: /^\/audit-log$/, page: () => Pages.auditLog() },
   { pattern: /^\/reports$/, page: () => Pages.reports() },
   { pattern: /^\/settings\/profile$/, page: () => Pages.profile() }
 ]

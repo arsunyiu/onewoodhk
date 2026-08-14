@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware, requireRole } from '../middleware/auth'
+import { logAuditFromUser } from '../utils/audit'
 
 const accounting = new Hono<{ Bindings: Bindings }>()
 accounting.use('*', authMiddleware)
@@ -246,6 +247,7 @@ accounting.post('/entries', async (c) => {
   const entry = await c.env.DB.prepare('SELECT * FROM accounting_entries WHERE id = ?')
     .bind(result.meta.last_row_id)
     .first()
+  await logAuditFromUser(c, user, 'create', 'accounting', result.meta.last_row_id, `新增${entryType === 'income' ? '收入' : '支出'}：${category} $${amount}`)
   return ok(c, entry, undefined, 201)
 })
 
@@ -276,15 +278,19 @@ accounting.put('/entries/:id', async (c) => {
     .run()
 
   const updated = await c.env.DB.prepare('SELECT * FROM accounting_entries WHERE id = ?').bind(id).first()
+  const auUser = c.get('user') as JwtPayload
+  await logAuditFromUser(c, auUser, 'update', 'accounting', id, `修改出入帳紀錄：${category} $${amount}`)
   return ok(c, updated)
 })
 
 // DELETE /api/accounting/entries/:id — 刪除出入帳紀錄（僅 admin）
 accounting.delete('/entries/:id', requireRole('admin'), async (c) => {
+  const user = c.get('user') as JwtPayload
   const id = parseInt(c.req.param('id'))
-  const existing = await c.env.DB.prepare('SELECT id FROM accounting_entries WHERE id = ?').bind(id).first()
+  const existing = await c.env.DB.prepare('SELECT id, category, amount FROM accounting_entries WHERE id = ?').bind(id).first<any>()
   if (!existing) return fail(c, '找不到紀錄', 404)
   await c.env.DB.prepare('DELETE FROM accounting_entries WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'accounting', id, `刪除出入帳紀錄：${existing.category} $${existing.amount}`)
   return ok(c, { id })
 })
 

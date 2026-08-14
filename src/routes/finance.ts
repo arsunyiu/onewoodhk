@@ -8,6 +8,7 @@ import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware, requireRole } from '../middleware/auth'
 import { getVisibleOwnerIds, ownerScopeClause } from '../utils/scope'
+import { logAuditFromUser } from '../utils/audit'
 
 const finance = new Hono<{ Bindings: Bindings }>()
 finance.use('*', authMiddleware)
@@ -156,15 +157,18 @@ finance.post('/orders/:id/payments', requireRole('admin', 'manager'), async (c) 
   const payment = await c.env.DB.prepare('SELECT * FROM order_payments WHERE id = ?')
     .bind(result.meta.last_row_id)
     .first()
+  await logAuditFromUser(c, user, 'create', 'finance', result.meta.last_row_id, `登記訂單 #${id} 收款 $${amount}`)
   return ok(c, payment, undefined, 201)
 })
 
 // DELETE /api/finance/payments/:id — 刪除收款紀錄（僅 admin）
 finance.delete('/payments/:id', requireRole('admin'), async (c) => {
+  const user = c.get('user') as JwtPayload
   const id = parseInt(c.req.param('id'))
-  const existing = await c.env.DB.prepare('SELECT id FROM order_payments WHERE id = ?').bind(id).first()
+  const existing = await c.env.DB.prepare('SELECT id, amount, order_id FROM order_payments WHERE id = ?').bind(id).first<any>()
   if (!existing) return fail(c, '找不到收款紀錄', 404)
   await c.env.DB.prepare('DELETE FROM order_payments WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'finance', id, `刪除訂單 #${existing.order_id} 收款紀錄 $${existing.amount}`)
   return ok(c, { id })
 })
 

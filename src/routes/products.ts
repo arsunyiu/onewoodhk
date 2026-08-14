@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Bindings, JwtPayload } from '../types'
 import { ok, fail } from '../utils/response'
 import { authMiddleware, requireRole } from '../middleware/auth'
+import { logAuditFromUser } from '../utils/audit'
 
 const products = new Hono<{ Bindings: Bindings }>()
 products.use('*', authMiddleware)
@@ -79,8 +80,10 @@ products.put('/:id', requireRole('admin', 'manager'), async (c) => {
 
 // DELETE /api/products/:id
 products.delete('/:id', requireRole('admin', 'manager'), async (c) => {
+  const user = c.get('user') as JwtPayload
   const id = c.req.param('id')
   await c.env.DB.prepare('UPDATE products SET is_active = 0 WHERE id = ?').bind(id).run()
+  await logAuditFromUser(c, user, 'delete', 'products', id, `下架產品 ID ${id}`)
   return ok(c, { deactivated: true })
 })
 
