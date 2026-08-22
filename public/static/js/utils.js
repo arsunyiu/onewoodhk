@@ -96,6 +96,29 @@ const PRODUCT_CATEGORIES = [
   '窗戶工程', '設備安裝工程'
 ]
 
+// 標準工程分類的英文對照（用於畫面/PDF顯示「中文(English)」雙語格式；
+// 資料庫儲存值維持純中文不變，僅顯示層加上英文，不影響既有資料比對/排序邏輯）
+const CATEGORY_EN = {
+  '前期工程': 'Preliminary Works',
+  '拆除及清潔工程': 'Demolition & Cleaning Works',
+  '泥水工程': 'Plastering Works',
+  '木器工程': 'Carpentry Works',
+  '地板工程': 'Flooring Works',
+  '天花及鋁質工程': 'Ceiling & Aluminium Works',
+  '油漆工程': 'Painting Works',
+  '電力工程': 'Electrical Works',
+  '水喉工程': 'Plumbing Works',
+  '防水工程': 'Waterproofing Works',
+  '窗戶工程': 'Window Works',
+  '設備安裝工程': 'Equipment Installation Works'
+}
+// 分類雙語顯示：「中文(English)」；查無英文對照（如自訂分類）則原樣顯示中文
+function categoryBilingual(category) {
+  if (!category) return category
+  const en = CATEGORY_EN[category]
+  return en ? `${category}(${en})` : category
+}
+
 // 新增產品時，自訂分類（不在 PRODUCT_CATEGORIES 標準清單內）可自行在分類名稱前
 // 加上「X. 」字母前綴（例如「Z. 客制工程」），系統會辨識此前綴並直接採用該字母
 // 作為分類代號，讓自訂分類也能產生 X1, X2... 編號，而非永遠顯示為「-」。
@@ -113,20 +136,20 @@ function categoryLetter(category) {
   const parsed = parseCategoryLetterPrefix(category)
   return parsed ? parsed.letter : ''
 }
-// 分類顯示文字（供分類篩選/下拉選單使用），如「A. 前期工程」；
+// 分類顯示文字（供分類篩選/下拉選單使用），如「A. 前期工程(Preliminary Works)」；
 // 自訂分類名稱本身已含字母前綴者，原樣顯示（不重複加前綴）；無代號則原樣顯示分類名稱
 function categoryLabelWithLetter(category) {
   const idx = PRODUCT_CATEGORIES.indexOf(category)
-  if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}. ${category}`
-  return category
+  if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}. ${categoryBilingual(category)}`
+  return categoryBilingual(category)
 }
-// 分類分組標題文字（供報價明細/PDF分類標題使用），如「A 前期工程」；
+// 分類分組標題文字（供報價明細/PDF分類標題使用），如「A 前期工程(Preliminary Works)」；
 // 自訂分類名稱本身已含字母前綴者，轉換為相同格式（如「Z  客制工程」）；無代號則原樣顯示
 function categoryHeaderWithLetter(category) {
   const idx = PRODUCT_CATEGORIES.indexOf(category)
-  if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}  ${category}`
+  if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}  ${categoryBilingual(category)}`
   const parsed = parseCategoryLetterPrefix(category)
-  return parsed ? `${parsed.letter}  ${parsed.name}` : category
+  return parsed ? `${parsed.letter}  ${categoryBilingual(parsed.name)}` : categoryBilingual(category)
 }
 // 依「分類字母 + 分類內建立順序（產品id由小到大）」為產品編上 A1, A2, B1... 編號，
 // 方便在產品目錄與報價單選用產品時尋找/對照。日後新增產品只會接在該分類最後一個編號之後，

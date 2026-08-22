@@ -571,7 +571,7 @@ function buildQuotePdfHtml(q, docType) {
   const summaryRows = itemGroups.map((group) => `
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:7px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
-      <td style="padding:7px 6px;color:#1f2937;">${esc(group.category)}</td>
+      <td style="padding:7px 6px;color:#1f2937;">${esc(categoryBilingual(group.category))}</td>
       <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
     </tr>`).join('')
 
