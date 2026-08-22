@@ -96,8 +96,10 @@ const PRODUCT_CATEGORIES = [
   '窗戶工程', '設備安裝工程'
 ]
 
-// 標準工程分類的英文對照（用於畫面/PDF顯示「中文(English)」雙語格式；
+// 工程分類的英文對照（用於畫面/PDF顯示「中文(English)」雙語格式；
 // 資料庫儲存值維持純中文不變，僅顯示層加上英文，不影響既有資料比對/排序邏輯）
+// 除 12 個標準分類外，亦包含目前系統中實際在用的自訂分類（如「客制化」），
+// 日後新增其他自訂分類且需要雙語顯示時，於此補上對應英文即可
 const CATEGORY_EN = {
   '前期工程': 'Preliminary Works',
   '拆除及清潔工程': 'Demolition & Cleaning Works',
@@ -110,13 +112,22 @@ const CATEGORY_EN = {
   '水喉工程': 'Plumbing Works',
   '防水工程': 'Waterproofing Works',
   '窗戶工程': 'Window Works',
-  '設備安裝工程': 'Equipment Installation Works'
+  '設備安裝工程': 'Equipment Installation Works',
+  '客制化': 'Customization Works'
 }
-// 分類雙語顯示：「中文(English)」；查無英文對照（如自訂分類）則原樣顯示中文
+// 分類雙語顯示：「中文(English)」；若分類帶有「X. 」字母前綴（自訂分類慣例，如「Z. 客制化」），
+// 會先取出前綴後的名稱查對照表，找到後仍保留原本完整文字（含前綴）再附加英文；
+// 查無英文對照者（未收錄的自訂分類）則原樣顯示，不受影響
 function categoryBilingual(category) {
   if (!category) return category
-  const en = CATEGORY_EN[category]
-  return en ? `${category}(${en})` : category
+  const direct = CATEGORY_EN[category]
+  if (direct) return `${category}(${direct})`
+  const parsed = parseCategoryLetterPrefix(category)
+  if (parsed) {
+    const en = CATEGORY_EN[parsed.name]
+    if (en) return `${category}(${en})`
+  }
+  return category
 }
 
 // 新增產品時，自訂分類（不在 PRODUCT_CATEGORIES 標準清單內）可自行在分類名稱前
