@@ -113,7 +113,8 @@ const CATEGORY_EN = {
   '防水工程': 'Waterproofing Works',
   '窗戶工程': 'Window Works',
   '設備安裝工程': 'Equipment Installation Works',
-  '客制化': 'Customization Works'
+  '客制化': 'Customization Works',
+  '雜項': 'MISCELLANEOUS ITEMS'
 }
 // 分類雙語顯示：「中文(English)」；若分類帶有「X. 」字母前綴（自訂分類慣例，如「Z. 客制化」），
 // 會先取出前綴後的名稱查對照表，找到後仍保留原本完整文字（含前綴）再附加英文；
