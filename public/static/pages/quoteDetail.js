@@ -600,6 +600,31 @@ function buildQuotePdfHtml(q, docType) {
       </ul>
     </div>`
 
+  // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
+  const signatureBlock = `
+    <div class="pdf-row" style="margin-top:24px;">
+      <div style="background:#dce1e7;padding:6px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation :</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:14px;font-size:11px;color:#1f2937;">
+        <div>
+          <div>For on behalf of</div>
+          <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
+          <div style="height:60px;"></div>
+          <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
+            <div>Signed By :</div>
+            <div>Date :</div>
+          </div>
+        </div>
+        <div>
+          <div>Accepted &amp; Confirmed By</div>
+          <div style="height:82px;"></div>
+          <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
+            <div>Signed By :</div>
+            <div>Date :</div>
+          </div>
+        </div>
+      </div>
+    </div>`
+
   // 共用文件抬頭（Logo/公司資訊/文件編號等），Summary 頁與 Breakdown 頁各自重複顯示一次
   const headerBlockHtml = (sectionTitle) => `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -675,6 +700,8 @@ function buildQuotePdfHtml(q, docType) {
     </div>
 
     ${termsBlock}
+
+    ${signatureBlock}
 
     <div class="pdf-row" style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
       ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
