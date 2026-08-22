@@ -536,7 +536,7 @@ function buildQuotePdfHtml(q, docType) {
   const footerNote = isInvoice ? COMPANY_INFO.invoiceFooterNote : COMPANY_INFO.footerNote
 
   // 按工程分類分組，每組顯示分類標題列，項目列拆分 Location / Description 兩欄，
-  // 每組結尾顯示 Sub-total，仿照原始報價單 (QW260801-R0.pdf) 版面效果
+  // 每組結尾顯示 Sub-total，仿照參考報價單（The Visionary - QW260804）Summary + Breakdown 兩段式版面
   const itemGroups = groupQuoteItemsByCategory(q.items)
   let runningIdx = 0
   const headerColor = isInvoice ? '#7a5a3a' : '#1f5b45'
@@ -567,10 +567,20 @@ function buildQuotePdfHtml(q, docType) {
     </tr>`
   }).join('')
 
+  // Summary 頁：各工程分類（A/B/C...）先滙總小計，仿照參考報價單 SUMMARY 頁格式
+  const summaryRows = itemGroups.map((group) => `
+    <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:7px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
+      <td style="padding:7px 6px;color:#1f2937;">${esc(group.category)}</td>
+      <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
+    </tr>`).join('')
+
+  const discountAmount = q.discount_value ? (q.subtotal - (q.total_amount - q.tax_amount)) : 0
+
   const discountRow = q.discount_value ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
       <span>${q.discount_type === 'percent' ? `折扣 (${q.discount_value}%)` : '折扣'}</span>
-      <span>-${Fmt.currency(q.subtotal - (q.total_amount - q.tax_amount), q.currency)}</span>
+      <span>-${Fmt.currency(discountAmount, q.currency)}</span>
     </div>` : ''
 
   const taxRow = q.tax_amount ? `
@@ -590,8 +600,8 @@ function buildQuotePdfHtml(q, docType) {
       </ul>
     </div>`
 
-  return `
-  <div style="width:760px;padding:36px;font-family:-apple-system,'PingFang TC','Noto Sans CJK TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#1f2937;background:#fff;box-sizing:border-box;">
+  // 共用文件抬頭（Logo/公司資訊/文件編號等），Summary 頁與 Breakdown 頁各自重複顯示一次
+  const headerBlockHtml = (sectionTitle) => `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div style="display:flex;align-items:center;gap:10px;">
         <img src="/static/images/logo.png" style="width:44px;height:44px;object-fit:contain;" crossorigin="anonymous" />
@@ -621,32 +631,38 @@ function buildQuotePdfHtml(q, docType) {
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">工程地址：</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
-    <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:11px;">
+    <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:16px;padding-bottom:8px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
+
+  // ---- Summary 頁：各分類先滙總（仿照參考報價單 SUMMARY 頁） ----
+  const summaryPageHtml = `
+    ${headerBlockHtml('SUMMARY 滙總')}
+
+    <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:22px;">No.</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:70px;">位置</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;">說明</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">數量</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">單位</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:60px;">單價</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:72px;">小計</th>
+          <th style="padding:7px 6px;text-align:left;font-weight:600;width:40px;">Item</th>
+          <th style="padding:7px 6px;text-align:left;font-weight:600;">Description 工程分類</th>
+          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">Amount (${q.currency || 'HKD'})</th>
         </tr>
       </thead>
-      <tbody>${itemRows}</tbody>
+      <tbody>${summaryRows}</tbody>
     </table>
 
-    <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:12px;">
-      <div style="width:220px;font-size:12px;">
-        <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
-          <span>未稅小計</span><span>${Fmt.currency(q.subtotal, q.currency)}</span>
+    <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
+      <div style="width:260px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;font-weight:700;color:#1f2937;padding:5px 0;border-top:1px solid #e5e7eb;">
+          <span>Grand Total 總計</span><span>${Fmt.currency(q.subtotal, q.currency)}</span>
         </div>
         ${discountRow}
         ${taxRow}
         <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;">
-          <span>總金額</span><span>${Fmt.currency(q.total_amount, q.currency)}</span>
+          <span>Total 合計</span><span>${Fmt.currency(q.total_amount, q.currency)}</span>
         </div>
       </div>
+    </div>
+
+    <div class="pdf-row" style="margin-top:14px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:8px;">
+      ${esc(Fmt.amountInWords(q.total_amount, q.currency))}
     </div>
 
     <div class="pdf-row" style="margin-top:22px;">
@@ -662,7 +678,33 @@ function buildQuotePdfHtml(q, docType) {
 
     <div class="pdf-row" style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
       ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
-    </div>
+    </div>`
+
+  // ---- Breakdown 頁：各分類細分項目（強制另起新頁，class="pdf-page-break" 供分頁邏輯辨識） ----
+  const breakdownPageHtml = `
+    <div class="pdf-page-break" style="margin-top:24px;">
+    ${headerBlockHtml('BREAKDOWN 細分報價')}
+
+    <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
+      <thead>
+        <tr style="background:${tableHeadColor};color:#fff;">
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:22px;">No.</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:70px;">位置</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;">說明</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">數量</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">單位</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:60px;">單價</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:72px;">小計</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    </div>`
+
+  return `
+  <div style="width:760px;padding:36px;font-family:-apple-system,'PingFang TC','Noto Sans CJK TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#1f2937;background:#fff;box-sizing:border-box;">
+    ${summaryPageHtml}
+    ${breakdownPageHtml}
   </div>`
 }
 
@@ -718,6 +760,13 @@ async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
     }
     rowBottomsCss.sort((a, b) => a - b)
 
+    // 強制分頁點：標記 class="pdf-page-break" 的元素會被強制放到新的一頁開頭
+    // （例如 Summary 頁與 Breakdown 頁之間的分隔），取該元素頂部座標作為分頁邊界
+    const forcedBreakEls = Array.from(contentEl.querySelectorAll('.pdf-page-break'))
+    const forcedBreaksCss = forcedBreakEls
+      .map((el) => el.getBoundingClientRect().top - containerTop)
+      .sort((a, b) => a - b)
+
     const canvas = await html2canvas(contentEl, {
       scale,
       useCORS: true,
@@ -737,13 +786,21 @@ async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
     const pageContentHeightPx = (pdfHeightMm - topMarginMm - bottomMarginMm) * pxPerMm
 
     const rowBottomsPx = rowBottomsCss.map((v) => v * scale)
+    const forcedBreaksPx = forcedBreaksCss.map((v) => v * scale)
     const totalHeightPx = canvas.height
 
-    // 依安全斷點（不可裁切區塊的底部邊界）切出每一頁的 [startPx, endPx) 範圍
+    // 依安全斷點（不可裁切區塊的底部邊界）切出每一頁的 [startPx, endPx) 範圍；
+    // 若強制分頁點落在目前頁範圍內，優先在該處分頁（即使頁面尚未填滿）
     const slices = []
     let cursor = 0
     while (cursor < totalHeightPx - 0.5) {
       const target = cursor + pageContentHeightPx
+      const forcedBreak = forcedBreaksPx.find((fb) => fb > cursor + 0.5 && fb < target - 0.5)
+      if (forcedBreak) {
+        slices.push([cursor, forcedBreak])
+        cursor = forcedBreak
+        continue
+      }
       if (target >= totalHeightPx) {
         slices.push([cursor, totalHeightPx])
         break

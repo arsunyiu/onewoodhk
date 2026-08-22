@@ -24,7 +24,52 @@ const Fmt = {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
+  },
+  // 將金額轉為英文大寫唸法，供報價 PDF Summary 頁 "SAY ... ONLY" 顯示（仿照業界慣用報價單格式）
+  amountInWords(amount, currency) {
+    const currencyName = CURRENCY_WORDS[currency] || CURRENCY_WORDS.HKD
+    return `SAY ${currencyName} ${numberToEnglishWords(amount)} ONLY`
   }
+}
+
+// ============================================================
+// 英文金額大寫轉換（用於報價 PDF Summary 頁）
+// ============================================================
+const CURRENCY_WORDS = { HKD: 'HONG KONG DOLLARS', TWD: 'NEW TAIWAN DOLLARS', USD: 'US DOLLARS', CNY: 'CHINESE YUAN' }
+const NUM_ONES = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN',
+  'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN']
+const NUM_TENS = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY']
+
+function numberToEnglishWords(num) {
+  num = Math.round(Number(num) || 0)
+  if (num === 0) return 'ZERO'
+  const chunk = (n) => {
+    let s = ''
+    if (n >= 100) {
+      s += NUM_ONES[Math.floor(n / 100)] + ' HUNDRED '
+      n %= 100
+    }
+    if (n >= 20) {
+      s += NUM_TENS[Math.floor(n / 10)] + ' '
+      n %= 10
+    } else if (n >= 10) {
+      s += NUM_ONES[n] + ' '
+      n = 0
+    }
+    if (n > 0) s += NUM_ONES[n] + ' '
+    return s.trim()
+  }
+  const units = ['', 'THOUSAND', 'MILLION', 'BILLION']
+  let n = Math.abs(num)
+  const parts = []
+  let unitIdx = 0
+  while (n > 0) {
+    const rem = n % 1000
+    if (rem > 0) parts.unshift(chunk(rem) + (units[unitIdx] ? ' ' + units[unitIdx] : ''))
+    n = Math.floor(n / 1000)
+    unitIdx += 1
+  }
+  return (num < 0 ? 'MINUS ' : '') + parts.join(' ').trim()
 }
 
 const QuoteStatusMeta = {
