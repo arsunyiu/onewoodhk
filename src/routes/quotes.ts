@@ -441,6 +441,27 @@ quotes.post('/:id/lose', async (c) => {
   return ok(c, { id, status: 'lost' })
 })
 
+// PUT /api/quotes/:id/invoice-remark  更新發票備註（取代條款/付款方式，僅寄出後可填寫）
+quotes.put('/:id/invoice-remark', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const existing = await c.env.DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(id).first<any>()
+  if (!existing) return fail(c, '找不到此報價單', 404)
+  if (user.role === 'sales' && existing.owner_id !== user.sub) return fail(c, '無權限操作', 403)
+  if (!['approved', 'sent', 'won'].includes(existing.status)) {
+    return fail(c, '僅已核准/已寄出/已成交狀態可填寫發票備註', 400)
+  }
+
+  const body = await c.req.json().catch(() => ({}))
+  const remark = typeof body?.invoice_remark === 'string' ? body.invoice_remark.trim() || null : null
+
+  await c.env.DB.prepare('UPDATE quotes SET invoice_remark=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .bind(remark, id)
+    .run()
+
+  return ok(c, { id, invoice_remark: remark })
+})
+
 // ============================================================
 // 附件管理（圖紙等檔案，存放於 Cloudflare R2）
 // ============================================================

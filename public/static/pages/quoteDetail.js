@@ -205,6 +205,18 @@ function renderQuoteDetail(q) {
             <div id="qd-attachments-list" class="space-y-2">
               <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
             </div>
+
+            ${['approved', 'sent', 'won'].includes(q.status) ? `
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <h3 class="text-xs font-semibold text-gray-600 mb-1.5"><i class="fas fa-file-invoice mr-1 text-gray-400"></i>發票備註</h3>
+              <p class="text-[11px] text-gray-400 mb-2">匯出發票PDF時將顯示此備註，取代報價單原有的條款/付款方式（選填）</p>
+              <textarea id="qd-invoice-remark-input" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：付款方式、匯款備註等">${Fmt.escapeHtml(q.invoice_remark || '')}</textarea>
+              <div class="flex justify-end mt-2">
+                <button id="qd-invoice-remark-save" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg">
+                  <i class="fas fa-save mr-1"></i>儲存備註
+                </button>
+              </div>
+            </div>` : ''}
           </div>
 
           ${q.terms ? `
@@ -337,7 +349,8 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-win', () => runQuoteAction(q.id, 'win', '確定標記此報價單為成交？系統將自動建立訂單。'))
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
-  bind('qd-export-invoice', () => openInvoiceRemarkModal(q))
+  bind('qd-export-invoice', () => exportInvoicePdf(q))
+  bind('qd-invoice-remark-save', () => saveInvoiceRemark(q))
 
   const fileInput = document.getElementById('qd-attachment-input')
   if (fileInput) {
@@ -489,6 +502,33 @@ async function deleteQuoteAttachment(quoteId, attId) {
     loadQuoteAttachments(quoteId)
   } catch (err) {
     showToast(err.message || '刪除失敗', 'error')
+  }
+}
+
+// 儲存發票備註（僅已核准/已寄出/已成交狀態可填寫，位於附件區塊下方），
+// 儲存後匯出發票PDF會直接套用此備註，取代報價單的固定條款/付款方式
+async function saveInvoiceRemark(q) {
+  const input = document.getElementById('qd-invoice-remark-input')
+  if (!input) return
+  const btn = document.getElementById('qd-invoice-remark-save')
+  const originalHtml = btn ? btn.innerHTML : ''
+  if (btn) {
+    btn.disabled = true
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>儲存中...'
+  }
+  try {
+    const remark = input.value.trim() || null
+    await API.put(`/quotes/${q.id}/invoice-remark`, { invoice_remark: remark })
+    q.invoice_remark = remark
+    if (QuoteDetailData) QuoteDetailData.invoice_remark = remark
+    showToast('發票備註已儲存')
+  } catch (err) {
+    showToast(err.message || '儲存失敗', 'error')
+  } finally {
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = originalHtml
+    }
   }
 }
 
@@ -897,31 +937,9 @@ async function exportQuotePdf(q) {
   await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), `${q.quote_no}.pdf`, btn, '匯出中...')
 }
 
-// 匯出發票前，先彈出備註輸入視窗（取代報價單的固定條款/付款方式），
-// 讓使用者可自行填寫本次發票要顯示的備註內容（選填，留空則不顯示備註區塊）
-function openInvoiceRemarkModal(q) {
-  openModal(`
-    <div class="p-5">
-      <h3 class="text-base font-bold text-gray-800 mb-1">匯出發票 PDF</h3>
-      <p class="text-xs text-gray-400 mb-4">可填寫本次發票要顯示的備註內容（選填），取代報價單原有的條款/付款方式</p>
-      <div>
-        <label class="text-xs text-gray-500">備註</label>
-        <textarea id="inv-remark-input" rows="4" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="選填，例：付款方式、匯款備註等"></textarea>
-      </div>
-      <div class="flex justify-end gap-2 mt-5">
-        <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
-        <button id="inv-remark-confirm" class="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg">確認匯出</button>
-      </div>
-    </div>
-  `)
-  document.getElementById('inv-remark-confirm').addEventListener('click', async () => {
-    const remark = document.getElementById('inv-remark-input').value.trim() || null
-    closeModal()
-    await exportInvoicePdf(q, remark)
-  })
-}
-
-async function exportInvoicePdf(q, invoiceRemark) {
+// 匯出發票PDF：直接套用已儲存的發票備註（於附件區塊下方填寫並儲存），
+// 取代報價單原有的固定條款/付款方式，無需每次匯出時重新輸入
+async function exportInvoicePdf(q) {
   const btn = document.getElementById('qd-export-invoice')
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoiceRemark), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', q.invoice_remark), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
 }
