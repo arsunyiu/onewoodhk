@@ -337,7 +337,7 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-win', () => runQuoteAction(q.id, 'win', '確定標記此報價單為成交？系統將自動建立訂單。'))
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
-  bind('qd-export-invoice', () => exportInvoicePdf(q))
+  bind('qd-export-invoice', () => openInvoiceRemarkModal(q))
 
   const fileInput = document.getElementById('qd-attachment-input')
   if (fileInput) {
@@ -523,7 +523,7 @@ function quoteNoToInvoiceNo(quoteNo) {
   return quoteNo.replace(/^Q-/, 'INV-')
 }
 
-function buildQuotePdfHtml(q, docType) {
+function buildQuotePdfHtml(q, docType, invoiceRemark) {
   docType = docType || 'quote'
   const isInvoice = docType === 'invoice'
   const siteAddress = q.site_address || q.customer_address || ''
@@ -591,7 +591,15 @@ function buildQuotePdfHtml(q, docType) {
 
   const TERMS_DISCLAIMER = '所有報價單所標示尺寸均以實際現場環境尺寸為準。\n因為所有物料會因應生產時期而有所分別，所提交物料樣板只作參考及配飾之用，並會以完成實物之物料為最終色樣。'
 
-  const termsBlock = `
+  // 發票：條款/付款方式改為單一備註輸入欄（invoiceRemark，匯出前由使用者填寫），不顯示報價單固定條款/免責聲明
+  // 報價單：維持原有「條款/付款方式」+ 免責聲明清單
+  const termsBlock = isInvoice
+    ? (invoiceRemark ? `
+    <div class="pdf-row" style="margin-top:18px;">
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">備註</div>
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceRemark)}</div>
+    </div>` : '')
+    : `
     <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
       ${q.terms ? `<div style="font-size:11px;color:#4b5563;white-space:pre-line;margin-bottom:6px;">${esc(q.terms)}</div>` : ''}
@@ -708,7 +716,8 @@ function buildQuotePdfHtml(q, docType) {
     </div>`
 
   // ---- Breakdown 頁：各分類細分項目（強制另起新頁，class="pdf-page-break" 供分頁邏輯辨識） ----
-  const breakdownPageHtml = `
+  // 發票不需要 Breakdown 細分頁，僅報價單顯示
+  const breakdownPageHtml = isInvoice ? '' : `
     <div class="pdf-page-break" style="margin-top:24px;">
     ${headerBlockHtml('BREAKDOWN 細分報價')}
 
@@ -888,7 +897,31 @@ async function exportQuotePdf(q) {
   await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), `${q.quote_no}.pdf`, btn, '匯出中...')
 }
 
-async function exportInvoicePdf(q) {
+// 匯出發票前，先彈出備註輸入視窗（取代報價單的固定條款/付款方式），
+// 讓使用者可自行填寫本次發票要顯示的備註內容（選填，留空則不顯示備註區塊）
+function openInvoiceRemarkModal(q) {
+  openModal(`
+    <div class="p-5">
+      <h3 class="text-base font-bold text-gray-800 mb-1">匯出發票 PDF</h3>
+      <p class="text-xs text-gray-400 mb-4">可填寫本次發票要顯示的備註內容（選填），取代報價單原有的條款/付款方式</p>
+      <div>
+        <label class="text-xs text-gray-500">備註</label>
+        <textarea id="inv-remark-input" rows="4" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="選填，例：付款方式、匯款備註等"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
+        <button id="inv-remark-confirm" class="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg">確認匯出</button>
+      </div>
+    </div>
+  `)
+  document.getElementById('inv-remark-confirm').addEventListener('click', async () => {
+    const remark = document.getElementById('inv-remark-input').value.trim() || null
+    closeModal()
+    await exportInvoicePdf(q, remark)
+  })
+}
+
+async function exportInvoicePdf(q, invoiceRemark) {
   const btn = document.getElementById('qd-export-invoice')
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice'), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoiceRemark), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
 }
