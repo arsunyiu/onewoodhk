@@ -101,19 +101,19 @@ const PRODUCT_CATEGORIES = [
 // 除 12 個標準分類外，亦包含目前系統中實際在用的自訂分類（如「客制化」），
 // 日後新增其他自訂分類且需要雙語顯示時，於此補上對應英文即可
 const CATEGORY_EN = {
-  '前期工程': 'Preliminary Works',
-  '拆除及清潔工程': 'Demolition & Cleaning Works',
-  '泥水工程': 'Plastering Works',
-  '木器工程': 'Carpentry Works',
-  '地板工程': 'Flooring Works',
-  '天花及鋁質工程': 'Ceiling & Aluminium Works',
-  '油漆工程': 'Painting Works',
-  '電力工程': 'Electrical Works',
-  '水喉工程': 'Plumbing Works',
-  '防水工程': 'Waterproofing Works',
-  '窗戶工程': 'Window Works',
-  '設備安裝工程': 'Equipment Installation Works',
-  '客制化': 'Customization Works',
+  '前期工程': 'PRELIMINARY WORKS',
+  '拆除及清潔工程': 'DEMOLITION & CLEANING WORKS',
+  '泥水工程': 'PLASTERING WORKS',
+  '木器工程': 'CARPENTRY WORKS',
+  '地板工程': 'FLOORING WORKS',
+  '天花及鋁質工程': 'CEILING & ALUMINIUM WORKS',
+  '油漆工程': 'PAINTING WORKS',
+  '電力工程': 'ELECTRICAL WORKS',
+  '水喉工程': 'PLUMBING WORKS',
+  '防水工程': 'WATERPROOFING WORKS',
+  '窗戶工程': 'WINDOW WORKS',
+  '設備安裝工程': 'EQUIPMENT INSTALLATION WORKS',
+  '客制化': 'CUSTOMIZATION WORKS',
   '雜項': 'MISCELLANEOUS ITEMS',
   '結構工程': 'STRUCTURAL WORKS'
 }
