@@ -612,7 +612,7 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:7px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
       <td style="padding:7px 6px;color:#1f2937;">${esc(categoryBilingual(group.category))}</td>
-      <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
+      <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>`).join('')
 
   const discountAmount = q.discount_value ? (q.subtotal - (q.total_amount - q.tax_amount)) : 0
@@ -620,13 +620,13 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
   const discountRow = q.discount_value ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
       <span>${q.discount_type === 'percent' ? `折扣 (${q.discount_value}%)` : '折扣'}</span>
-      <span>-${Fmt.currency(discountAmount, q.currency)}</span>
+      <span>-${Fmt.currency(discountAmount, q.currency, 2)}</span>
     </div>` : ''
 
   const taxRow = q.tax_amount ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
       <span>稅額 (${(q.tax_rate * 100).toFixed(0)}%)</span>
-      <span>${Fmt.currency(q.tax_amount, q.currency)}</span>
+      <span>${Fmt.currency(q.tax_amount, q.currency, 2)}</span>
     </div>` : ''
 
   // 發票：條款/付款方式改為單一備註輸入欄（invoiceRemark，匯出前由使用者填寫），不顯示報價單固定條款/免責聲明
@@ -719,12 +719,12 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
     <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
       <div style="width:260px;font-size:12px;">
         <div style="display:flex;justify-content:space-between;font-weight:700;color:#1f2937;padding:5px 0;border-top:1px solid #e5e7eb;">
-          <span>Grand Total 總計</span><span>${Fmt.currency(q.subtotal, q.currency)}</span>
+          <span>Grand Total 總計</span><span>${Fmt.currency(q.subtotal, q.currency, 2)}</span>
         </div>
         ${discountRow}
         ${taxRow}
         <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;">
-          <span>Total 合計</span><span>${Fmt.currency(q.total_amount, q.currency)}</span>
+          <span>Total 合計</span><span>${Fmt.currency(q.total_amount, q.currency, 2)}</span>
         </div>
       </div>
     </div>

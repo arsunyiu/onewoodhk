@@ -4,10 +4,15 @@
 const CURRENCY_SYMBOL = { HKD: 'HK$', TWD: 'NT$', USD: 'US$', CNY: 'RMB¥' }
 
 const Fmt = {
-  currency(amount, currency) {
+  // decimals 未指定時維持原本樣式（最多 0 位小數，整數不強制補 .00）；
+  // 傳入 decimals（如報價單 Summary 頁固定顯示 2 位小數）則強制補齊小數位數
+  currency(amount, currency, decimals) {
     const n = Number(amount || 0)
     const symbol = CURRENCY_SYMBOL[currency] || CURRENCY_SYMBOL.HKD
-    return symbol + ' ' + n.toLocaleString('zh-HK', { maximumFractionDigits: 0 })
+    const opts = decimals === undefined
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+    return symbol + ' ' + n.toLocaleString('zh-HK', opts)
   },
   date(d) {
     if (!d) return '-'
