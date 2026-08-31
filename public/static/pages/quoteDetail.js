@@ -629,24 +629,19 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
       <span>${Fmt.currency(q.tax_amount, q.currency)}</span>
     </div>` : ''
 
-  const TERMS_DISCLAIMER = '所有報價單所標示尺寸均以實際現場環境尺寸為準。\n因為所有物料會因應生產時期而有所分別，所提交物料樣板只作參考及配飾之用，並會以完成實物之物料為最終色樣。'
-
   // 發票：條款/付款方式改為單一備註輸入欄（invoiceRemark，匯出前由使用者填寫），不顯示報價單固定條款/免責聲明
-  // 報價單：維持原有「條款/付款方式」+ 免責聲明清單
+  // 報價單：維持原有「條款/付款方式」（固定免責聲明清單已按需求移除）
   const termsBlock = isInvoice
     ? (invoiceRemark ? `
     <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">備註</div>
       <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceRemark)}</div>
     </div>` : '')
-    : `
+    : (q.terms ? `
     <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
-      ${q.terms ? `<div style="font-size:11px;color:#4b5563;white-space:pre-line;margin-bottom:6px;">${esc(q.terms)}</div>` : ''}
-      <ul style="font-size:10px;color:#6b7280;line-height:1.6;margin:0;padding-left:16px;">
-        ${TERMS_DISCLAIMER.split('\n').map((line) => `<li>${esc(line)}</li>`).join('')}
-      </ul>
-    </div>`
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;margin-bottom:6px;">${esc(q.terms)}</div>
+    </div>` : '')
 
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   const signatureBlock = `
