@@ -928,14 +928,21 @@ async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
   }
 }
 
+// 下載檔名用：移除檔名中不允許/易造成問題的字元（保留中英數字、括號、空格、連字號）
+function sanitizeFileNamePart(name) {
+  return String(name || '').replace(/[\\/:*?"<>|]/g, '').trim()
+}
+
 async function exportQuotePdf(q) {
   const btn = document.getElementById('qd-export-pdf')
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), `${q.quote_no}.pdf`, btn, '匯出中...')
+  const fileName = `${q.quote_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), fileName, btn, '匯出中...')
 }
 
 // 匯出發票PDF：直接套用已儲存的發票備註（於附件區塊下方填寫並儲存），
 // 取代報價單原有的固定條款/付款方式，無需每次匯出時重新輸入
 async function exportInvoicePdf(q) {
   const btn = document.getElementById('qd-export-invoice')
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', q.invoice_remark), `${quoteNoToInvoiceNo(q.quote_no)}.pdf`, btn, '匯出中...')
+  const fileName = `${quoteNoToInvoiceNo(q.quote_no)}_${sanitizeFileNamePart(q.company_name)}.pdf`
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', q.invoice_remark), fileName, btn, '匯出中...')
 }
