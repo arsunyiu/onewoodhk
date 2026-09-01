@@ -123,8 +123,9 @@ const CATEGORY_EN = {
   '結構工程': 'STRUCTURAL WORKS'
 }
 // 分類雙語顯示：「中文(English)」；若分類帶有「X. 」字母前綴（自訂分類慣例，如「Z. 客制化」），
-// 會先取出前綴後的名稱查對照表，找到後仍保留原本完整文字（含前綴）再附加英文；
-// 查無英文對照者（未收錄的自訂分類）則原樣顯示，不受影響
+// 一律先去除前綴取出純分類名稱再查英文對照並拼接，確保與標準分類一樣呈現乾淨的「中文(English)」，
+// 不重複顯示字母代號（字母代號另由 categoryLetter()/categoryHeaderWithLetter() 等函式負責顯示）；
+// 查無英文對照者（未收錄的自訂分類）則顯示去除前綴後的純中文名稱
 function categoryBilingual(category) {
   if (!category) return category
   const direct = CATEGORY_EN[category]
@@ -132,7 +133,7 @@ function categoryBilingual(category) {
   const parsed = parseCategoryLetterPrefix(category)
   if (parsed) {
     const en = CATEGORY_EN[parsed.name]
-    if (en) return `${category}(${en})`
+    return en ? `${parsed.name}(${en})` : parsed.name
   }
   return category
 }
@@ -155,11 +156,13 @@ function categoryLetter(category) {
   return parsed ? parsed.letter : ''
 }
 // 分類顯示文字（供分類篩選/下拉選單使用），如「A. 前期工程(Preliminary Works)」；
-// 自訂分類名稱本身已含字母前綴者，原樣顯示（不重複加前綴）；無代號則原樣顯示分類名稱
+// 自訂分類名稱本身已含字母前綴者，統一轉換為相同格式（如「Z. 客制工程(Customization Works)」，
+// 不會重複顯示前綴）；無代號則原樣顯示分類名稱
 function categoryLabelWithLetter(category) {
   const idx = PRODUCT_CATEGORIES.indexOf(category)
   if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}. ${categoryBilingual(category)}`
-  return categoryBilingual(category)
+  const parsed = parseCategoryLetterPrefix(category)
+  return parsed ? `${parsed.letter}. ${categoryBilingual(category)}` : categoryBilingual(category)
 }
 // 分類分組標題文字（供報價明細/PDF分類標題使用），如「A 前期工程(Preliminary Works)」；
 // 自訂分類名稱本身已含字母前綴者，轉換為相同格式（如「Z  客制工程」）；無代號則原樣顯示
