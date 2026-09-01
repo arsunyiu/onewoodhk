@@ -13,7 +13,8 @@ const COMPANY_INFO = {
   bank: {
     name: '華僑永享 OCBC',
     accountNo: '035-802156138831',
-    accountName: 'One Wood Limited'
+    accountName: 'One Wood Limited',
+    fpsPhone: '95555124'
   },
   quoteValidDays: 30,
   footerNote: '此報價單經雙方簽署後具有合約效力',

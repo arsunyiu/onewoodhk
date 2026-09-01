@@ -739,6 +739,7 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
         <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
         <div>Account No.: ${esc(COMPANY_INFO.bank.accountNo)}</div>
         <div>Name: ${esc(COMPANY_INFO.bank.accountName)}</div>
+        <div>轉數快(FPS) 電話號碼: ${esc(COMPANY_INFO.bank.fpsPhone)}</div>
       </div>
     </div>
 

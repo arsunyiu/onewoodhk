@@ -13,7 +13,8 @@ export const COMPANY_INFO = {
   bank: {
     name: '華僑永享 OCBC',
     accountNo: '035-802156138831',
-    accountName: 'One Wood Limited'
+    accountName: 'One Wood Limited',
+    fpsPhone: '95555124'
   },
   quoteValidDays: 30,
   // 香港無銷售稅（VAT/GST），報價單預設不計稅
