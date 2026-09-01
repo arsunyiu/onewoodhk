@@ -270,8 +270,13 @@ quotes.put('/:id', async (c) => {
     }
   }
 
+  // 轉移負責人：僅 admin/manager 可修改 owner_id（sales 只能編輯自己名下的報價，不可轉移）
+  const ownerId = body.owner_id !== undefined && (user.role === 'admin' || user.role === 'manager')
+    ? body.owner_id
+    : existing.owner_id
+
   await c.env.DB.prepare(
-    `UPDATE quotes SET title=?, contact_id=?, currency=?, subtotal=?, discount_type=?, discount_value=?,
+    `UPDATE quotes SET title=?, contact_id=?, owner_id=?, currency=?, subtotal=?, discount_type=?, discount_value=?,
        tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, site_address=?,
        status = CASE WHEN status='rejected' THEN 'draft' ELSE status END,
        updated_at=CURRENT_TIMESTAMP
@@ -280,6 +285,7 @@ quotes.put('/:id', async (c) => {
     .bind(
       body.title ?? existing.title,
       body.contact_id ?? existing.contact_id,
+      ownerId,
       body.currency ?? existing.currency,
       subtotal,
       discountType,
