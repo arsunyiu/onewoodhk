@@ -166,7 +166,7 @@ function renderQuoteDetail(q) {
                     <td class="py-2.5 text-gray-600 text-xs">${Fmt.escapeHtml(it.location || '-')}</td>
                     <td class="py-2.5">
                       <p class="text-gray-800">${Fmt.escapeHtml(it.item_name)}</p>
-                      ${it.description ? `<p class="text-xs text-gray-400">${Fmt.escapeHtml(it.description)}</p>` : ''}
+                      ${it.description ? `<p class="text-xs text-gray-600">${Fmt.escapeHtml(it.description)}</p>` : ''}
                     </td>
                     <td class="py-2.5 text-right text-gray-600">${it.quantity}</td>
                     <td class="py-2.5 text-right text-gray-600">${Fmt.escapeHtml(it.unit)}</td>
@@ -589,7 +589,7 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:6px 4px;color:#9ca3af;">${runningIdx}</td>
       <td style="padding:6px 4px;color:#4b5563;">${esc(it.location || '-')}</td>
-      <td style="padding:6px 4px;color:#1f2937;">${esc(it.item_name)}${it.description ? `<div style="font-size:10px;color:#9ca3af;margin-top:1px;">${esc(it.description)}</div>` : ''}</td>
+      <td style="padding:6px 4px;color:#1f2937;">${esc(it.item_name)}${it.description ? `<div style="font-size:10px;color:#4b5563;margin-top:1px;">${esc(it.description)}</div>` : ''}</td>
       <td style="padding:6px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
       <td style="padding:6px 4px;text-align:right;color:#4b5563;">${esc(it.unit)}</td>
       <td style="padding:6px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
