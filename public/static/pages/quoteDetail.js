@@ -554,8 +554,10 @@ function runQuoteRejectAction(id) {
 }
 
 // ============================================================
-// PDF 匯出：以 HTML/CSS 版面 + html2canvas 轉圖 + jsPDF 拼頁
-// （改用瀏覽器原生字型渲染，避免 jsPDF 內建字型不支援中文而產生亂碼）
+// PDF 匯出：以 HTML/CSS 版面 + 瀏覽器原生列印（window.print）產生 PDF，
+// 使用者於列印對話框選擇「另存為 PDF」。相較舊版 html2canvas 轉圖再拼頁的做法，
+// 此方式輸出的 PDF 文字為原生可選取/可複製文字（非圖片），且不受 jsPDF 內建
+// 字型不支援中文的限制（列印時直接沿用瀏覽器/系統字型渲染中文）。
 // docType: 'quote' 報價單 QUOTATION | 'invoice' 發票 INVOICE（僅已核准/已寄送/已成交狀態可匯出）
 // ============================================================
 function quoteNoToInvoiceNo(quoteNo) {
@@ -774,158 +776,133 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
     </div>`
 
   return `
-  <div style="width:760px;padding:36px;font-family:-apple-system,'PingFang TC','Noto Sans CJK TC','Microsoft JhengHei',Helvetica,Arial,sans-serif;color:#1f2937;background:#fff;box-sizing:border-box;">
+  <div style="width:100%;color:#1f2937;background:#fff;box-sizing:border-box;">
     ${summaryPageHtml}
     ${breakdownPageHtml}
   </div>`
 }
 
 // 共用的 HTML -> PDF 產生流程（報價單／發票共用，僅版面內容與檔名不同）
-// 分頁邏輯：依畫面上標記 class="pdf-row" 的元素邊界找安全斷點分頁，
-// 避免表格列（或收款資訊等區塊）被硬生生從中間切開；並在每頁上下保留邊距空白。
-async function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
-  if (!window.jspdf || !window.html2canvas) {
-    showToast('PDF 匯出元件載入中，請稍後再試', 'error')
-    return
-  }
-  const originalHtml = btn ? btn.innerHTML : ''
-  if (btn) {
-    btn.disabled = true
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1.5"></i>${busyLabel || '匯出中...'}`
-  }
-
-  const container = document.createElement('div')
-  container.style.position = 'fixed'
-  container.style.left = '-9999px'
-  container.style.top = '0'
-  container.innerHTML = html
-  document.body.appendChild(container)
-
-  try {
-    const scale = 2
-    const contentEl = container.firstElementChild
-    // 記錄所有「不可裁切」區塊（表格分類列/項目列/小計/頁尾等）在內容中的上下邊界座標（CSS px）
-    // 注意：表格 <tr> 在部分瀏覽器中 offsetTop/offsetParent 的計算基準會跟一般 <div> 不同
-    // （anonymous table box 導致 offsetParent 並非預期的容器），故改用
-    // getBoundingClientRect() 相對容器頂部的距離計算，避免斷點算錯導致列被從中間裁斷。
-    const containerTop = contentEl.getBoundingClientRect().top
-    const rowEls = Array.from(contentEl.querySelectorAll('.pdf-row'))
-    const rowRectsCss = rowEls
-      .map((el) => {
-        const r = el.getBoundingClientRect()
-        return { top: r.top - containerTop, bottom: r.bottom - containerTop }
-      })
-      .sort((a, b) => a.top - b.top)
-
-    // 安全斷點：取相鄰兩個不可裁切區塊之間「空白間隙」的中點，而不是直接用區塊本身量到的邊界。
-    // 原因：getBoundingClientRect() 量到的區塊框，有時無法完全包住粗體文字/數字實際渲染出來的墨跡
-    // （字型 line-height、anti-aliasing 造成的視覺溢出），若直接拿邊界當斷點，可能剛好切在文字中間。
-    // 改用相鄰區塊間空白間隙的中點，即使量測有 1~2px 誤差，斷點仍必定落在真正的空白處。
-    const rowBottomsCss = []
-    for (let i = 0; i < rowRectsCss.length - 1; i++) {
-      const gapTop = rowRectsCss[i].bottom
-      const gapBottom = rowRectsCss[i + 1].top
-      rowBottomsCss.push(gapBottom > gapTop ? (gapTop + gapBottom) / 2 : gapTop)
-    }
-    if (rowRectsCss.length > 0) {
-      rowBottomsCss.push(rowRectsCss[rowRectsCss.length - 1].bottom)
-    }
-    rowBottomsCss.sort((a, b) => a - b)
-
-    // 強制分頁點：標記 class="pdf-page-break" 的元素會被強制放到新的一頁開頭
-    // （例如 Summary 頁與 Breakdown 頁之間的分隔），取該元素頂部座標作為分頁邊界
-    const forcedBreakEls = Array.from(contentEl.querySelectorAll('.pdf-page-break'))
-    const forcedBreaksCss = forcedBreakEls
-      .map((el) => el.getBoundingClientRect().top - containerTop)
-      .sort((a, b) => a - b)
-
-    const canvas = await html2canvas(contentEl, {
-      scale,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    })
-
-    const { jsPDF } = window.jspdf
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-    const pdfWidthMm = pdf.internal.pageSize.getWidth()
-    const pdfHeightMm = pdf.internal.pageSize.getHeight()
-    const imgWidthMm = pdfWidthMm
-    const pxPerMm = canvas.width / imgWidthMm
-
-    // 每頁上下各保留邊距，避免內容貼邊、底部留白
-    const topMarginMm = 8
-    const bottomMarginMm = 12
-    const pageContentHeightPx = (pdfHeightMm - topMarginMm - bottomMarginMm) * pxPerMm
-
-    const rowBottomsPx = rowBottomsCss.map((v) => v * scale)
-    const forcedBreaksPx = forcedBreaksCss.map((v) => v * scale)
-    const totalHeightPx = canvas.height
-
-    // 依安全斷點（不可裁切區塊的底部邊界）切出每一頁的 [startPx, endPx) 範圍；
-    // 若強制分頁點落在目前頁範圍內，優先在該處分頁（即使頁面尚未填滿）
-    const slices = []
-    let cursor = 0
-    while (cursor < totalHeightPx - 0.5) {
-      const target = cursor + pageContentHeightPx
-      const forcedBreak = forcedBreaksPx.find((fb) => fb > cursor + 0.5 && fb < target - 0.5)
-      if (forcedBreak) {
-        slices.push([cursor, forcedBreak])
-        cursor = forcedBreak
-        continue
-      }
-      if (target >= totalHeightPx) {
-        slices.push([cursor, totalHeightPx])
-        break
-      }
-      let breakPoint = null
-      for (const rb of rowBottomsPx) {
-        if (rb > cursor + 0.5 && rb <= target) breakPoint = rb
-        if (rb > target) break
-      }
-      if (breakPoint === null) {
-        // 找不到安全斷點（單一區塊本身就超過一頁高度），只能強制裁切
-        breakPoint = target
-      }
-      slices.push([cursor, breakPoint])
-      cursor = breakPoint
-    }
-
-    // 將整張畫面依安全斷點切成多張子畫布，逐頁貼入 PDF
-    const sliceCanvas = document.createElement('canvas')
-    const sliceCtx = sliceCanvas.getContext('2d')
-    slices.forEach(([startPx, endPx], idx) => {
-      const sliceHeightPx = endPx - startPx
-      if (sliceHeightPx <= 0) return
-      sliceCanvas.width = canvas.width
-      sliceCanvas.height = sliceHeightPx
-      sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height)
-      sliceCtx.drawImage(canvas, 0, startPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx)
-      const sliceImgData = sliceCanvas.toDataURL('image/png')
-      const sliceHeightMm = sliceHeightPx / pxPerMm
-      if (idx > 0) pdf.addPage()
-      pdf.addImage(sliceImgData, 'PNG', 0, topMarginMm, imgWidthMm, sliceHeightMm)
-    })
-
-    // 每頁底部置中加上頁碼 X/X
-    const totalPages = pdf.internal.getNumberOfPages()
-    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      pdf.setPage(pageNum)
-      pdf.setFontSize(9)
-      pdf.setTextColor(150, 150, 150)
-      pdf.text(`${pageNum} / ${totalPages}`, pdfWidthMm / 2, pdfHeightMm - 5, { align: 'center' })
-    }
-
-    pdf.save(fileName)
-  } catch (err) {
-    console.error(err)
-    showToast('PDF 匯出失敗，請稍後再試', 'error')
-  } finally {
-    document.body.removeChild(container)
+// 改用瀏覽器原生列印（隱藏 iframe + window.print()），由使用者在列印對話框
+// 選擇「另存為 PDF」。輸出的 PDF 文字為原生文字（非圖片截圖），可選取/複製，
+// 中文亦由瀏覽器/系統字型直接渲染，不會有字型不支援造成的亂碼問題。
+// 分頁邏輯改用純 CSS：
+//   - class="pdf-row" 的區塊套用 page-break-inside: avoid，避免表格列/小計/
+//     簽署欄等區塊被從中間裁斷到下一頁
+//   - class="pdf-page-break" 的區塊套用 page-break-before: always，強制
+//     Summary 頁與 Breakdown 頁分頁
+function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
+  return new Promise((resolve) => {
+    const originalHtml = btn ? btn.innerHTML : ''
     if (btn) {
-      btn.disabled = false
-      btn.innerHTML = originalHtml
+      btn.disabled = true
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1.5"></i>${busyLabel || '匯出中...'}`
     }
+
+    const restoreBtn = () => {
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = originalHtml
+      }
+    }
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    document.body.appendChild(iframe)
+
+    // 檔名（去除 .pdf 副檔名）作為列印視窗標題，部分瀏覽器（如 Chrome）
+    // 另存為 PDF 時會以視窗標題作為預設檔名
+    const docTitle = String(fileName || '').replace(/\.pdf$/i, '')
+
+    const printDocHtml = `<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>${Fmt.escapeHtml(docTitle)}</title>
+<style>
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    font-family: -apple-system, 'PingFang TC', 'Noto Sans CJK TC', 'Microsoft JhengHei', Helvetica, Arial, sans-serif;
+    color: #1f2937;
+    padding: 12mm 10mm;
   }
+  table { border-collapse: collapse; width: 100%; }
+  .pdf-row { page-break-inside: avoid; }
+  .pdf-page-break { page-break-before: always; }
+  @page { size: A4; margin: 10mm 8mm 14mm 8mm; }
+  @media print {
+    .pdf-row { page-break-inside: avoid; }
+    .pdf-page-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>${html}</body>
+</html>`
+
+    const doc = iframe.contentWindow.document
+    doc.open()
+    doc.write(printDocHtml)
+    doc.close()
+
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      restoreBtn()
+      // 延遲移除 iframe，避免部分瀏覽器在列印對話框仍讀取 iframe 內容時被中途移除
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+      }, 1000)
+      resolve()
+    }
+
+    let printed = false
+    const triggerPrint = () => {
+      if (printed) return
+      printed = true
+      try {
+        iframe.contentWindow.focus()
+        // afterprint：使用者完成列印/另存為 PDF 對話框（無論確認或取消）後觸發
+        iframe.contentWindow.addEventListener('afterprint', finish)
+        iframe.contentWindow.print()
+      } catch (err) {
+        console.error(err)
+        showToast('PDF 匯出失敗，請稍後再試', 'error')
+        finish()
+        return
+      }
+      // 保底：部分瀏覽器（尤其行動裝置）不會觸發 afterprint，逾時後仍還原按鈕狀態
+      setTimeout(finish, 4000)
+    }
+
+    // 等待版面內的圖片（Logo）載入完成再觸發列印，避免圖片還沒渲染出來
+    const images = Array.from(doc.images || [])
+    if (images.length === 0) {
+      setTimeout(triggerPrint, 150)
+    } else {
+      let pending = images.length
+      const onImgDone = () => {
+        pending -= 1
+        if (pending <= 0) setTimeout(triggerPrint, 50)
+      }
+      images.forEach((img) => {
+        if (img.complete) {
+          onImgDone()
+        } else {
+          img.addEventListener('load', onImgDone)
+          img.addEventListener('error', onImgDone)
+        }
+      })
+      // 保底逾時：圖片載入異常久時，仍強制觸發列印
+      setTimeout(triggerPrint, 3000)
+    }
+  })
 }
 
 // 下載檔名用：移除檔名中不允許/易造成問題的字元（保留中英數字、括號、空格、連字號）
