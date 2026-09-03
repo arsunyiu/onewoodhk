@@ -3,6 +3,13 @@
 // 所有頁面渲染函式定義於 /static/pages/*.js
 // ============================================================
 
+// 深色主題下 Chart.js 預設文字/格線顏色（各頁圖表若未個別覆寫則套用此設定）
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = '#a3b3aa'
+  Chart.defaults.borderColor = '#2c3e37'
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif"
+}
+
 const routes = [
   { pattern: /^\/login$/, page: () => Pages.login() },
   { pattern: /^\/$/, page: () => Pages.dashboard() },
@@ -53,11 +60,11 @@ function router() {
   }
   // 404 fallback
   document.getElementById('app').innerHTML = `
-    <div class="flex items-center justify-center h-screen text-gray-500">
+    <div class="flex items-center justify-center h-screen text-ink-400 bg-surface-300">
       <div class="text-center">
         <i class="fas fa-face-frown text-4xl mb-3"></i>
         <p>找不到頁面</p>
-        <a href="/" class="text-primary-600 hover:underline">回首頁</a>
+        <a href="/" class="text-primary-500 hover:underline">回首頁</a>
       </div>
     </div>`
 }

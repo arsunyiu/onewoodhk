@@ -181,6 +181,21 @@ reports.get('/summary', async (c) => {
     .bind(...cParamsAliased)
     .all<any>()
 
+  // ---- 案件類型分布（依已成交報價的項目分類統計金額，供首頁/報表分類排行使用）----
+  const byCategoryRows = await c.env.DB.prepare(
+    `SELECT COALESCE(NULLIF(TRIM(qi.category), ''), '其他項目') as category,
+       COUNT(DISTINCT q.id) as quote_count,
+       COALESCE(SUM(qi.line_total), 0) as amount
+     FROM quote_items qi
+     JOIN quotes q ON q.id = qi.quote_id
+     WHERE q.status = 'won' AND ${qClauseBare}
+     GROUP BY category
+     ORDER BY amount DESC
+     LIMIT 8`
+  )
+    .bind(...qParamsBare)
+    .all<any>()
+
   return ok(c, {
     range,
     kpi: {
@@ -196,7 +211,8 @@ reports.get('/summary', async (c) => {
     pipeline,
     trend,
     by_owner: byOwner,
-    by_customer: byCustomerRows.results
+    by_customer: byCustomerRows.results,
+    by_category: byCategoryRows.results
   })
 })
 

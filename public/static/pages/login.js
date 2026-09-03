@@ -1,68 +1,69 @@
 // ============================================================
-// 登入頁
+// 登入頁（深色奢華風格）
 // ============================================================
 window.Pages = window.Pages || {}
 
 Pages.login = function () {
   document.getElementById('app').innerHTML = `
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 to-wood-600 px-4">
-    <div class="w-full max-w-md">
+  <div class="min-h-screen flex items-center justify-center bg-[#0d1815] px-4 relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(circle at 20% 20%, rgba(212,181,126,0.12), transparent 45%), radial-gradient(circle at 80% 80%, rgba(79,207,148,0.08), transparent 45%);"></div>
+    <div class="w-full max-w-md relative z-10">
       <div class="text-center mb-8">
-        <div class="w-20 h-20 rounded-full bg-white p-1 mx-auto mb-4 shadow-lg">
-          <img src="/static/images/logo.png" alt="一木工程" class="w-full h-full object-contain rounded-full" />
+        <div class="w-16 h-16 rounded-2xl bg-surface-100 border border-line p-2 mx-auto mb-4 flex items-center justify-center">
+          <img src="/static/images/logo.png" alt="一木工程" class="w-full h-full object-contain" />
         </div>
-        <h1 class="text-2xl font-bold text-white">一木工程</h1>
-        <p class="text-primary-100 text-xs mt-0.5">One Wood Limited</p>
-        <p class="text-primary-100 text-sm mt-1">B2B 報價管理 · 客戶關係 · 銷售一體化平台</p>
+        <h1 class="text-2xl font-bold text-ink-50 tracking-wide">一木工程</h1>
+        <p class="text-primary-500 text-[11px] mt-1 tracking-label uppercase">One Wood Limited &middot; MUI Suite</p>
+        <p class="text-ink-400 text-sm mt-2">B2B 報價管理 · 客戶關係 · 銷售一體化平台</p>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-lg font-semibold text-gray-800 mb-6">登入您的帳號</h2>
+      <div class="bg-surface-100 border border-line rounded-2xl shadow-xl p-8">
+        <h2 class="text-lg font-semibold text-ink-50 mb-6">登入您的帳號</h2>
         <form id="login-form" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+            <label class="block text-sm font-medium text-ink-400 mb-1">Email</label>
             <div class="relative">
-              <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+              <i class="fas fa-envelope absolute left-3 top-3.5 text-ink-400 text-sm"></i>
               <input type="email" id="login-email" required autocomplete="email"
-                class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
                 placeholder="you@company.com" value="manager@onewood.com.hk" />
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-600 mb-1">密碼</label>
+            <label class="block text-sm font-medium text-ink-400 mb-1">密碼</label>
             <div class="relative">
-              <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+              <i class="fas fa-lock absolute left-3 top-3.5 text-ink-400 text-sm"></i>
               <input type="password" id="login-password" required autocomplete="current-password"
-                class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
                 placeholder="輸入密碼" value="OneWood2026#" />
             </div>
           </div>
-          <div id="login-error" class="hidden text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+          <div id="login-error" class="hidden text-sm text-bad-400 bg-bad-50 rounded-lg px-3 py-2"></div>
           <button type="submit" id="login-btn"
-            class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+            class="w-full bg-primary-500 hover:bg-primary-600 text-surface-300 font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2">
             <span>登入</span>
             <i class="fas fa-arrow-right text-xs"></i>
           </button>
         </form>
 
-        <div class="mt-6 pt-5 border-t border-gray-100">
+        <div class="mt-6 pt-5 border-t border-line">
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <button data-quick="manager@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user-tie text-gray-400 mr-1"></i> 主管
+            <button data-quick="manager@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+              <i class="fas fa-user-tie text-ink-400 mr-1"></i> 主管
             </button>
-            <button data-quick="kenny@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Kenny Yip
+            <button data-quick="kenny@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Kenny Yip
             </button>
-            <button data-quick="wah@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Wah Tong
+            <button data-quick="wah@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Wah Tong
             </button>
-            <button data-quick="joy@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-gray-50 hover:bg-gray-100 text-gray-600">
-              <i class="fas fa-user text-gray-400 mr-1"></i> 業務 - Joy Ng
+            <button data-quick="joy@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Joy Ng
             </button>
           </div>
         </div>
       </div>
-      <p class="text-center text-primary-100 text-xs mt-6">© 2026 一木工程. All rights reserved.</p>
+      <p class="text-center text-ink-400 text-xs mt-6">&copy; 2026 一木工程. All rights reserved.</p>
     </div>
   </div>`
 
