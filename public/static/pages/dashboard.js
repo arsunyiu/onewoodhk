@@ -135,11 +135,74 @@ function dashSparkBars(values, colorCls) {
   </div>`
 }
 
+// 迷你波浪趨勢圖（SVG 平滑折線 + 漸層填色），用於卡片內展示近月走勢
+let dashSparklineSeq = 0
+function dashSparkline(values, colorHex) {
+  const vals = values && values.length ? values : [0, 0]
+  const w = 100
+  const h = 36
+  const pad = 4
+  const max = Math.max(...vals, 0)
+  const min = Math.min(...vals, 0)
+  const range = max - min || 1
+  const stepX = vals.length > 1 ? w / (vals.length - 1) : w
+  const pts = vals.map((v, i) => [i * stepX, h - pad - ((v - min) / range) * (h - pad * 2)])
+
+  let line = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i]
+    const [x1, y1] = pts[i + 1]
+    const mx = ((x0 + x1) / 2).toFixed(1)
+    const my = ((y0 + y1) / 2).toFixed(1)
+    line += ` Q ${x0.toFixed(1)} ${y0.toFixed(1)} ${mx} ${my}`
+    line += ` Q ${x1.toFixed(1)} ${y1.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`
+  }
+  const lastX = pts[pts.length - 1][0].toFixed(1)
+  const firstX = pts[0][0].toFixed(1)
+  const area = `${line} L ${lastX} ${h} L ${firstX} ${h} Z`
+  const gid = `dashSpark${dashSparklineSeq++}`
+
+  return `<div class="mt-2">
+    <svg viewBox="0 0 ${w} ${h}" class="w-full h-9" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${colorHex}" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="${colorHex}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#${gid})" stroke="none"/>
+      <path d="${line}" fill="none" stroke="${colorHex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <circle cx="${lastX}" cy="${pts[pts.length - 1][1].toFixed(1)}" r="2.2" fill="${colorHex}"/>
+    </svg>
+  </div>`
+}
+
+// 圓形進度環，用於卡片內展示單一比率指標（如已收款比例）
+function dashRadialGauge(pct, colorHex, trackHex, subLabel) {
+  const p = Math.max(0, Math.min(100, pct))
+  const r = 15.5
+  const c = 2 * Math.PI * r
+  const offset = c - (p / 100) * c
+  return `<div class="flex items-center gap-3 mt-2">
+    <svg viewBox="0 0 36 36" class="w-9 h-9 -rotate-90 shrink-0">
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="${trackHex}" stroke-width="4"/>
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="${colorHex}" stroke-width="4" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>
+    </svg>
+    <div class="min-w-0">
+      <p class="text-sm font-bold text-ink-50">${p}%</p>
+      <p class="text-[10px] text-ink-400 truncate">${subLabel || ''}</p>
+    </div>
+  </div>`
+}
+
 function renderDashboard(d, r, ps, activeProjects, finance) {
   // ---------- KPI 卡片 ----------
   const revenuePct = dashTrendPct(r.trend, 'won_amount')
   const revenueBars = (r.trend || []).map((t) => t.won_amount || 0)
   const statusBars = [ps.not_started || 0, ps.in_progress || 0, ps.paused || 0, ps.completed || 0]
+  // 由近月 created_count / won_count 換算出月度成交率走勢（無需新資料來源）
+  const winRateSeries = (r.trend || []).map((t) => (t.created_count ? Math.round((t.won_count / t.created_count) * 1000) / 10 : 0))
 
   let card3
   if (finance) {
@@ -151,8 +214,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
       label: '應收帳款',
       sub2: '應收 · RECEIVABLES',
       value: Fmt.currency(finance.balance),
-      extra: `<div class="w-full h-1.5 rounded-full bg-surface-300 mt-2 overflow-hidden"><div class="h-full bg-info-500" style="width:${pct}%"></div></div>
-              <p class="text-[11px] text-ink-400 mt-1">已收 ${pct}% · 應收帳款總額 ${Fmt.currency(finance.total_amount)}</p>`
+      extra: dashRadialGauge(pct, '#41668c', '#e1e0d5', `已收 ${Fmt.currency(finance.paid_amount)} / ${Fmt.currency(finance.total_amount)}`)
     })
   } else {
     card3 = dashCard({
@@ -174,7 +236,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
       label: '本月成交金額',
       sub2: '本月營收 · MONTHLY REVENUE',
       value: Fmt.currency(d.won_this_month.amount),
-      extra: dashSparkBars(revenueBars.length ? revenueBars : [0], 'bg-good-500/70') + `<div class="mt-1">${dashTrendBadge(revenuePct)}</div>`
+      extra: dashSparkline(revenueBars.length ? revenueBars : [0, 0], '#3d604b') + `<div class="mt-1">${dashTrendBadge(revenuePct)}</div>`
     })}
     ${dashCard({
       icon: 'fa-helmet-safety',
@@ -193,8 +255,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
       label: '成交率',
       sub2: '報價成交率 · WIN RATE',
       value: r.kpi.win_rate !== null ? `${r.kpi.win_rate}%` : '—',
-      extra: `<div class="w-full h-1.5 rounded-full bg-surface-300 mt-2 overflow-hidden"><div class="h-full bg-wood-500" style="width:${r.kpi.win_rate || 0}%"></div></div>
-              <p class="text-[11px] text-ink-400 mt-1">${r.kpi.won_count} 成交 · ${r.kpi.lost_count} 流失</p>`
+      extra: dashSparkline(winRateSeries.length ? winRateSeries : [0, 0], '#cca969') + `<p class="text-[11px] text-ink-400 mt-1">${r.kpi.won_count} 成交 · ${r.kpi.lost_count} 流失</p>`
     })}
   `
 
