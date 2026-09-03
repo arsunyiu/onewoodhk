@@ -159,7 +159,7 @@ function renderTrendChart(trend) {
           type: 'bar',
           label: '報價建立量（筆）',
           data: createdData,
-          backgroundColor: '#e0c090',
+          backgroundColor: '#cca969',
           borderRadius: 6,
           yAxisID: 'y'
         },
@@ -167,8 +167,8 @@ function renderTrendChart(trend) {
           type: 'line',
           label: '成交金額',
           data: wonData,
-          borderColor: '#5fdba3',
-          backgroundColor: '#5fdba3',
+          borderColor: '#3d604b',
+          backgroundColor: '#3d604b',
           tension: 0.35,
           yAxisID: 'y1'
         }
@@ -204,7 +204,7 @@ function renderTrendChart(trend) {
 function renderPipelineChart(pipeline) {
   const keys = ['draft', 'pending_approval', 'approved', 'sent', 'won', 'lost', 'rejected']
   const labels = ['草稿', '待審核', '已核准', '已寄送', '已成交', '已流失', '已拒絕']
-  const colors = ['#9baaa1', '#e6c274', '#82b0ca', '#e0c090', '#5fdba3', '#b6a1cf', '#eea095']
+  const colors = ['#546e5a', '#cca969', '#5a738e', '#8e4e4e', '#3d604b', '#6c5a8e', '#a8893d']
   const data = keys.map((k) => pipeline[k]?.count || 0)
 
   if (ReportsCharts.pipeline) ReportsCharts.pipeline.destroy()

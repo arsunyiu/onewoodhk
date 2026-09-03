@@ -3,7 +3,7 @@
 // ============================================================
 window.Pages = window.Pages || {}
 
-const DASH_PALETTE = ['#5fdba3', '#e0c090', '#82b0ca', '#eea095', '#b6a1cf', '#9baaa1']
+const DASH_PALETTE = ['#3d604b', '#cca969', '#5a738e', '#8e4e4e', '#6c5a8e', '#546e5a']
 
 Pages.dashboard = async function () {
   mountLayout('dashboard')
@@ -234,17 +234,17 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
         {
           label: '成交金額',
           data: (r.trend || []).map((t) => t.won_amount || 0),
-          borderColor: '#5fdba3',
-          backgroundColor: 'rgba(95,219,163,0.15)',
+          borderColor: '#3d604b',
+          backgroundColor: 'rgba(61,96,75,0.12)',
           fill: true,
           tension: 0.35,
           pointRadius: 3,
-          pointBackgroundColor: '#5fdba3'
+          pointBackgroundColor: '#3d604b'
         },
         {
           label: '報價金額',
           data: (r.trend || []).map((t) => t.created_amount || 0),
-          borderColor: '#9baaa1',
+          borderColor: '#a8a495',
           borderDash: [4, 4],
           backgroundColor: 'transparent',
           fill: false,
@@ -300,7 +300,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
         const phase = dashPhaseOf(p.progress_percent || 0)
         return `
       <a href="/projects/${p.id}" class="group relative rounded-lg overflow-hidden aspect-square flex items-end p-2"
-         style="background:linear-gradient(155deg, ${color}55 0%, #16221d 85%)">
+         style="background:linear-gradient(155deg, ${color}CC 0%, ${color} 100%)">
         <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-good-500 shadow"></span>
         <div class="relative z-10">
           <p class="text-[11px] font-semibold text-white truncate drop-shadow">${Fmt.escapeHtml(p.company_name)}</p>
