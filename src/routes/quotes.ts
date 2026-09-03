@@ -429,6 +429,14 @@ quotes.post('/:id/win', async (c) => {
     .bind(orderResult.meta.last_row_id, existing.site_address || null, existing.owner_id)
     .run()
 
+  // 報價單成交後，若客戶仍為「潛在(lead)」狀態，自動升級為「合作中(active)」，
+  // 代表已產生實際成交訂單；已是 active/inactive 者不覆蓋（避免覆蓋手動設定的停止合作狀態）
+  if (existing.customer_id) {
+    await c.env.DB.prepare(
+      "UPDATE customers SET status='active', updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='lead'"
+    ).bind(existing.customer_id).run()
+  }
+
   return ok(c, { id, status: 'won', order })
 })
 
