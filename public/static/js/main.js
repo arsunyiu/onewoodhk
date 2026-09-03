@@ -5,8 +5,8 @@
 
 // 深色主題下 Chart.js 預設文字/格線顏色（各頁圖表若未個別覆寫則套用此設定）
 if (typeof Chart !== 'undefined') {
-  Chart.defaults.color = '#a3b3aa'
-  Chart.defaults.borderColor = '#2c3e37'
+  Chart.defaults.color = '#b3c1b8'
+  Chart.defaults.borderColor = '#3a4f47'
   Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif"
 }
 

@@ -5,8 +5,8 @@ window.Pages = window.Pages || {}
 
 Pages.login = function () {
   document.getElementById('app').innerHTML = `
-  <div class="min-h-screen flex items-center justify-center bg-[#0d1815] px-4 relative overflow-hidden">
-    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(circle at 20% 20%, rgba(212,181,126,0.12), transparent 45%), radial-gradient(circle at 80% 80%, rgba(79,207,148,0.08), transparent 45%);"></div>
+  <div class="min-h-screen flex items-center justify-center bg-[#152420] px-4 relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(circle at 20% 20%, rgba(224,192,144,0.16), transparent 45%), radial-gradient(circle at 80% 80%, rgba(95,219,163,0.12), transparent 45%);"></div>
     <div class="w-full max-w-md relative z-10">
       <div class="text-center mb-8">
         <div class="w-16 h-16 rounded-2xl bg-surface-100 border border-line p-2 mx-auto mb-4 flex items-center justify-center">

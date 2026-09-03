@@ -205,8 +205,8 @@ function renderAccountingTrendChart(trend) {
     data: {
       labels: trend.map((t) => t.month),
       datasets: [
-        { label: '收入', data: trend.map((t) => t.income), backgroundColor: '#4fcf94' },
-        { label: '支出', data: trend.map((t) => t.expense), backgroundColor: '#e69289' }
+        { label: '收入', data: trend.map((t) => t.income), backgroundColor: '#5fdba3' },
+        { label: '支出', data: trend.map((t) => t.expense), backgroundColor: '#eea095' }
       ]
     },
     options: {
