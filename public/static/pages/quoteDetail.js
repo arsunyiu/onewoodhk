@@ -83,10 +83,6 @@ function renderQuoteDetail(q) {
           <button id="qd-export-pdf" class="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium px-3.5 py-2 rounded-lg">
             <i class="fas fa-file-pdf mr-1.5 text-red-500"></i>匯出報價PDF
           </button>
-          ${['approved', 'sent', 'won'].includes(q.status) ? `
-          <button id="qd-export-invoice" class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg">
-            <i class="fas fa-file-invoice mr-1.5"></i>匯出發票PDF
-          </button>` : ''}
           ${canEdit ? `<a href="/quotes/${q.id}/edit" class="bg-white border border-primary-600 text-primary-600 hover:bg-primary-50 text-sm font-medium px-3.5 py-2 rounded-lg">
             <i class="fas fa-pen mr-1.5"></i>編輯
           </a>` : ''}
@@ -206,18 +202,45 @@ function renderQuoteDetail(q) {
               <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
             </div>
 
-            ${['approved', 'sent', 'won'].includes(q.status) ? `
-            <div class="mt-4 pt-4 border-t border-gray-100">
-              <h3 class="text-xs font-semibold text-gray-600 mb-1.5"><i class="fas fa-file-invoice mr-1 text-gray-400"></i>發票備註</h3>
-              <p class="text-[11px] text-gray-400 mb-2">匯出發票PDF時將顯示此備註，取代報價單原有的條款/付款方式（選填）</p>
-              <textarea id="qd-invoice-remark-input" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：付款方式、匯款備註等">${Fmt.escapeHtml(q.invoice_remark || '')}</textarea>
-              <div class="flex justify-end mt-2">
-                <button id="qd-invoice-remark-save" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg">
-                  <i class="fas fa-save mr-1"></i>儲存備註
+          </div>
+
+          <!-- 發票管理（支援分期收款，一張報價單可開立多張發票） -->
+          ${['approved', 'sent', 'won'].includes(q.status) ? `
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-gray-700"><i class="fas fa-file-invoice mr-1.5 text-gray-400"></i>發票管理</h2>
+              <button id="qd-invoice-add-btn" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg">
+                <i class="fas fa-plus mr-1"></i>新增發票
+              </button>
+            </div>
+            <p class="text-[11px] text-gray-400 mb-3">如需分期收款（例如：訂金 + 尾款），可依每期分別開立獨立發票，各自填寫金額與備註</p>
+            <div id="qd-invoice-summary" class="text-xs text-gray-500 mb-3"></div>
+            <div id="qd-invoice-add-form" class="hidden mb-3 p-3 rounded-lg bg-gray-50 border border-gray-100 space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[11px] text-gray-400">金額 (${Fmt.escapeHtml(q.currency || 'HKD')})</label>
+                  <input id="qd-invoice-amount-input" type="number" step="0.01" min="0.01" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：51800" />
+                </div>
+                <div>
+                  <label class="text-[11px] text-gray-400">發票日期</label>
+                  <input id="qd-invoice-date-input" type="date" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" value="${new Date().toISOString().slice(0, 10)}" />
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] text-gray-400">備註（此張發票專屬，如「訂金 Deposit payment」）</label>
+                <textarea id="qd-invoice-remark-input" rows="2" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：訂金 Deposit payment"></textarea>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button id="qd-invoice-cancel-btn" class="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5">取消</button>
+                <button id="qd-invoice-save-btn" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg">
+                  <i class="fas fa-save mr-1"></i>建立發票
                 </button>
               </div>
-            </div>` : ''}
-          </div>
+            </div>
+            <div id="qd-invoices-list" class="space-y-2">
+              <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
+            </div>
+          </div>` : ''}
 
           ${q.terms ? `
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -349,8 +372,9 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-win', () => runQuoteAction(q.id, 'win', '確定標記此報價單為成交？系統將自動建立訂單。'))
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
-  bind('qd-export-invoice', () => exportInvoicePdf(q))
-  bind('qd-invoice-remark-save', () => saveInvoiceRemark(q))
+  bind('qd-invoice-add-btn', () => toggleInvoiceAddForm(true))
+  bind('qd-invoice-cancel-btn', () => toggleInvoiceAddForm(false))
+  bind('qd-invoice-save-btn', () => createQuoteInvoice(q))
 
   const fileInput = document.getElementById('qd-attachment-input')
   if (fileInput) {
@@ -361,6 +385,7 @@ function bindQuoteDetailEvents(q) {
     })
   }
   loadQuoteAttachments(q.id)
+  if (['approved', 'sent', 'won'].includes(q.status)) loadQuoteInvoices(q)
 }
 
 // ============================================================
@@ -505,30 +530,132 @@ async function deleteQuoteAttachment(quoteId, attId) {
   }
 }
 
-// 儲存發票備註（僅已核准/已寄出/已成交狀態可填寫，位於附件區塊下方），
-// 儲存後匯出發票PDF會直接套用此備註，取代報價單的固定條款/付款方式
-async function saveInvoiceRemark(q) {
-  const input = document.getElementById('qd-invoice-remark-input')
-  if (!input) return
-  const btn = document.getElementById('qd-invoice-remark-save')
-  const originalHtml = btn ? btn.innerHTML : ''
-  if (btn) {
-    btn.disabled = true
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>儲存中...'
+// ============================================================
+// 發票管理（支援單一報價單分期開立多張發票，如訂金 + 尾款）
+// ============================================================
+let QuoteInvoicesCache = []
+
+function toggleInvoiceAddForm(show) {
+  const form = document.getElementById('qd-invoice-add-form')
+  if (!form) return
+  form.classList.toggle('hidden', !show)
+  if (show) {
+    const amountInput = document.getElementById('qd-invoice-amount-input')
+    if (amountInput) { amountInput.value = ''; amountInput.focus() }
+    const remarkInput = document.getElementById('qd-invoice-remark-input')
+    if (remarkInput) remarkInput.value = ''
   }
+}
+
+function renderInvoiceSummary(q) {
+  const el = document.getElementById('qd-invoice-summary')
+  if (!el) return
+  const invoicedTotal = QuoteInvoicesCache.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
+  const remaining = Number(q.total_amount || 0) - invoicedTotal
+  el.innerHTML = `報價總額 <span class="font-semibold text-gray-700">${Fmt.currency(q.total_amount, q.currency)}</span>
+    ｜ 已開發票總額 <span class="font-semibold text-gray-700">${Fmt.currency(invoicedTotal, q.currency)}</span>
+    ｜ 尚餘 <span class="font-semibold ${remaining === 0 ? 'text-green-600' : 'text-orange-500'}">${Fmt.currency(remaining, q.currency)}</span>`
+}
+
+async function loadQuoteInvoices(q) {
+  const el = document.getElementById('qd-invoices-list')
+  if (!el) return
   try {
-    const remark = input.value.trim() || null
-    await API.put(`/quotes/${q.id}/invoice-remark`, { invoice_remark: remark })
-    q.invoice_remark = remark
-    if (QuoteDetailData) QuoteDetailData.invoice_remark = remark
-    showToast('發票備註已儲存')
+    const res = await API.get(`/quotes/${q.id}/invoices`)
+    QuoteInvoicesCache = res.data || []
+    renderInvoiceSummary(q)
+    renderQuoteInvoicesList(q)
   } catch (err) {
-    showToast(err.message || '儲存失敗', 'error')
+    el.innerHTML = `<p class="text-xs text-red-400">${Fmt.escapeHtml(err.message)}</p>`
+  }
+}
+
+function renderQuoteInvoicesList(q) {
+  const el = document.getElementById('qd-invoices-list')
+  if (!el) return
+  if (!QuoteInvoicesCache.length) {
+    el.innerHTML = `<p class="text-xs text-gray-400">尚未開立任何發票</p>`
+    return
+  }
+  el.innerHTML = QuoteInvoicesCache
+    .map((inv) => `
+    <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-800">${Fmt.escapeHtml(inv.invoice_no)}</span>
+          <span class="text-xs px-1.5 py-0.5 rounded ${inv.is_paid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'}">${inv.is_paid ? '已收款' : '未收款'}</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-0.5">${Fmt.currency(inv.amount, q.currency)} ｜ ${Fmt.date(inv.issue_date)}${inv.remark ? ' ｜ ' + Fmt.escapeHtml(inv.remark) : ''}</div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+          <input type="checkbox" data-inv-id="${inv.id}" class="qd-inv-paid-toggle" ${inv.is_paid ? 'checked' : ''} />
+          收款
+        </label>
+        <button data-inv-id="${inv.id}" class="qd-inv-export text-gray-500 hover:text-primary-600 px-1.5" title="匯出PDF"><i class="fas fa-file-pdf"></i></button>
+        ${!inv.is_paid ? `<button data-inv-id="${inv.id}" class="qd-inv-delete text-gray-400 hover:text-red-600 px-1.5" title="刪除"><i class="fas fa-trash"></i></button>` : ''}
+      </div>
+    </div>`)
+    .join('')
+
+  el.querySelectorAll('.qd-inv-paid-toggle').forEach((cb) => {
+    cb.addEventListener('change', () => toggleInvoicePaid(q, cb.dataset.invId, cb.checked))
+  })
+  el.querySelectorAll('.qd-inv-export').forEach((btn) => {
+    btn.addEventListener('click', () => exportInvoicePdf(q, btn.dataset.invId))
+  })
+  el.querySelectorAll('.qd-inv-delete').forEach((btn) => {
+    btn.addEventListener('click', () => deleteQuoteInvoice(q, btn.dataset.invId))
+  })
+}
+
+async function createQuoteInvoice(q) {
+  const amountInput = document.getElementById('qd-invoice-amount-input')
+  const dateInput = document.getElementById('qd-invoice-date-input')
+  const remarkInput = document.getElementById('qd-invoice-remark-input')
+  const amount = Number(amountInput ? amountInput.value : 0)
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast('請輸入有效金額', 'error')
+    return
+  }
+  const btn = document.getElementById('qd-invoice-save-btn')
+  const originalHtml = btn ? btn.innerHTML : ''
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>建立中...' }
+  try {
+    await API.post(`/quotes/${q.id}/invoices`, {
+      amount,
+      issue_date: dateInput ? dateInput.value : undefined,
+      remark: remarkInput ? remarkInput.value.trim() : ''
+    })
+    showToast('發票已建立')
+    toggleInvoiceAddForm(false)
+    loadQuoteInvoices(q)
+  } catch (err) {
+    showToast(err.message || '建立失敗', 'error')
   } finally {
-    if (btn) {
-      btn.disabled = false
-      btn.innerHTML = originalHtml
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHtml }
+  }
+}
+
+async function toggleInvoicePaid(q, invId, isPaid) {
+  try {
+    await API.put(`/quotes/invoices/${invId}/paid`, { is_paid: isPaid })
+    showToast(isPaid ? '已標記為已收款' : '已取消收款標記')
+    loadQuoteInvoices(q)
+  } catch (err) {
+    showToast(err.message || '操作失敗', 'error')
+    loadQuoteInvoices(q)
+  }
+}
+
+async function deleteQuoteInvoice(q, invId) {
+  if (!confirm('確定要刪除此發票嗎？')) return
+  try {
+    await API.delete(`/quotes/invoices/${invId}`)
+    showToast('發票已刪除')
+    loadQuoteInvoices(q)
+  } catch (err) {
+    showToast(err.message || '刪除失敗', 'error')
   }
 }
 
@@ -559,23 +686,22 @@ function runQuoteRejectAction(id) {
 // 此方式輸出的 PDF 文字為原生可選取/可複製文字（非圖片），且不受 jsPDF 內建
 // 字型不支援中文的限制（列印時直接沿用瀏覽器/系統字型渲染中文）。
 // docType: 'quote' 報價單 QUOTATION | 'invoice' 發票 INVOICE（僅已核准/已寄送/已成交狀態可匯出）
+// invoiceData: 匯出發票時傳入該張發票的獨立資料 { invoice_no, amount, remark, issue_date }，
+// 使每張發票 PDF 只顯示該筆金額與備註（支援分期收款，不再套用報價單全額/合併備註）
 // ============================================================
-function quoteNoToInvoiceNo(quoteNo) {
-  // 報價單號 Q-YYMMDDxxx -> 發票編號 INV-YYMMDDxxx，方便追溯對應報價單
-  return quoteNo.replace(/^Q-/, 'INV-')
-}
-
-function buildQuotePdfHtml(q, docType, invoiceRemark) {
+function buildQuotePdfHtml(q, docType, invoiceData) {
   docType = docType || 'quote'
   const isInvoice = docType === 'invoice'
   const siteAddress = q.site_address || q.customer_address || ''
   const esc = Fmt.escapeHtml
   const docLabel = isInvoice ? '發票 INVOICE' : '報價單 QUOTATION'
-  const docNo = isInvoice ? quoteNoToInvoiceNo(q.quote_no) : q.quote_no
+  const docNo = isInvoice ? invoiceData.invoice_no : q.quote_no
   const docNoLabel = isInvoice ? '發票編號：' : '報價單號：'
-  const issueDate = isInvoice ? Fmt.date(new Date().toISOString()) : Fmt.date(q.created_at)
+  const issueDate = isInvoice ? Fmt.date(invoiceData.issue_date) : Fmt.date(q.created_at)
   const issueDateLabel = isInvoice ? '發票日期：' : '日期：'
   const footerNote = isInvoice ? COMPANY_INFO.invoiceFooterNote : COMPANY_INFO.footerNote
+  // 發票金額：使用該張發票自己的金額（分期收款），而非報價單全額
+  const displayAmount = isInvoice ? Number(invoiceData.amount) : Number(q.total_amount)
 
   // 按工程分類分組，每組顯示分類標題列，項目列拆分 Location / Description 兩欄，
   // 每組結尾顯示 Sub-total，仿照參考報價單（The Visionary - QW260804）Summary + Breakdown 兩段式版面
@@ -631,13 +757,13 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
       <span>${Fmt.currency(q.tax_amount, q.currency, 2)}</span>
     </div>` : ''
 
-  // 發票：條款/付款方式改為單一備註輸入欄（invoiceRemark，匯出前由使用者填寫），不顯示報價單固定條款/免責聲明
+  // 發票：顯示該張發票自己的備註（invoiceData.remark，如「訂金 Deposit payment」），不顯示報價單固定條款/免責聲明
   // 報價單：維持原有「條款/付款方式」（固定免責聲明清單已按需求移除）
   const termsBlock = isInvoice
-    ? (invoiceRemark ? `
+    ? (invoiceData.remark ? `
     <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">備註</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceRemark)}</div>
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceData.remark)}</div>
     </div>` : '')
     : (q.terms ? `
     <div class="pdf-row" style="margin-top:18px;">
@@ -703,10 +829,23 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
 
     <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:16px;padding-bottom:8px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
 
-  // ---- Summary 頁：各分類先滙總（仿照參考報價單 SUMMARY 頁） ----
-  const summaryPageHtml = `
-    ${headerBlockHtml('SUMMARY 滙總')}
-
+  // ---- Summary 頁：報價單顯示各分類滙總（仿照參考報價單 SUMMARY 頁）；
+  // 發票僅顯示此張發票專屬的金額與備註，不套用報價單全額/合併備註（支援分期收款） ----
+  const summaryTableHtml = isInvoice ? `
+    <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
+      <thead>
+        <tr style="background:${tableHeadColor};color:#fff;">
+          <th style="padding:7px 6px;text-align:left;font-weight:600;">Description 說明</th>
+          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">Amount (${q.currency || 'HKD'})</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:8px 6px;color:#1f2937;">${invoiceData.remark ? esc(invoiceData.remark) : `本次應付款項（對應報價單 ${esc(q.quote_no)}）`}</td>
+          <td style="padding:8px 6px;text-align:right;color:#1f2937;">${displayAmount.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        </tr>
+      </tbody>
+    </table>` : `
     <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
@@ -716,8 +855,16 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
         </tr>
       </thead>
       <tbody>${summaryRows}</tbody>
-    </table>
+    </table>`
 
+  const summaryTotalsHtml = isInvoice ? `
+    <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
+      <div style="width:260px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;padding-top:6px;">
+          <span>Total Due 本次應付</span><span>${Fmt.currency(displayAmount, q.currency, 2)}</span>
+        </div>
+      </div>
+    </div>` : `
     <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
       <div style="width:260px;font-size:12px;">
         <div style="display:flex;justify-content:space-between;font-weight:700;color:#1f2937;padding:5px 0;border-top:1px solid #e5e7eb;">
@@ -729,10 +876,17 @@ function buildQuotePdfHtml(q, docType, invoiceRemark) {
           <span>Total 合計</span><span>${Fmt.currency(q.total_amount, q.currency, 2)}</span>
         </div>
       </div>
-    </div>
+    </div>`
+
+  const summaryPageHtml = `
+    ${headerBlockHtml('SUMMARY 滙總')}
+
+    ${summaryTableHtml}
+
+    ${summaryTotalsHtml}
 
     <div class="pdf-row" style="margin-top:14px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:8px;">
-      ${esc(Fmt.amountInWords(q.total_amount, q.currency))}
+      ${esc(Fmt.amountInWords(displayAmount, q.currency))}
     </div>
 
     <div class="pdf-row" style="margin-top:22px;">
@@ -916,10 +1070,14 @@ async function exportQuotePdf(q) {
   await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), fileName, btn, '匯出中...')
 }
 
-// 匯出發票PDF：直接套用已儲存的發票備註（於附件區塊下方填寫並儲存），
-// 取代報價單原有的固定條款/付款方式，無需每次匯出時重新輸入
-async function exportInvoicePdf(q) {
-  const btn = document.getElementById('qd-export-invoice')
-  const fileName = `${quoteNoToInvoiceNo(q.quote_no)}_${sanitizeFileNamePart(q.company_name)}.pdf`
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', q.invoice_remark), fileName, btn, '匯出中...')
+// 匯出單張發票PDF：僅顯示該張發票自己的金額與備註（支援分期收款，如訂金/尾款各自匯出）
+async function exportInvoicePdf(q, invId) {
+  const invoice = QuoteInvoicesCache.find((i) => String(i.id) === String(invId))
+  if (!invoice) {
+    showToast('找不到此發票資料', 'error')
+    return
+  }
+  const btn = document.querySelector(`.qd-inv-export[data-inv-id="${invId}"]`)
+  const fileName = `${invoice.invoice_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoice), fileName, btn, '')
 }

@@ -456,6 +456,7 @@ quotes.post('/:id/lose', async (c) => {
 })
 
 // PUT /api/quotes/:id/invoice-remark  更新發票備註（取代條款/付款方式，僅寄出後可填寫）
+// [舊版單一發票備註欄位，保留供舊資料相容，新開發票請改用下方 /invoices 系列路由]
 quotes.put('/:id/invoice-remark', async (c) => {
   const user = c.get('user') as JwtPayload
   const id = c.req.param('id')
@@ -474,6 +475,110 @@ quotes.put('/:id/invoice-remark', async (c) => {
     .run()
 
   return ok(c, { id, invoice_remark: remark })
+})
+
+// ============================================================
+// 發票管理（支援單一報價單分期開立多張發票，如訂金 + 尾款）
+// ============================================================
+
+// GET /api/quotes/:id/invoices  列出此報價單下所有發票
+quotes.get('/:id/invoices', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const quote = await getQuoteWithAccess(c.env.DB, user, id)
+  if (!quote) return fail(c, '找不到此報價單或無權限', 404)
+
+  const rows = await c.env.DB.prepare(
+    `SELECT i.*, u.name as created_by_name
+     FROM invoices i
+     JOIN users u ON u.id = i.created_by
+     WHERE i.quote_id = ? ORDER BY i.seq ASC`
+  )
+    .bind(id)
+    .all()
+  return ok(c, rows.results)
+})
+
+// POST /api/quotes/:id/invoices  新增一張發票（僅已核准/已寄出/已成交狀態可開立）
+quotes.post('/:id/invoices', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const existing = await c.env.DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(id).first<any>()
+  if (!existing) return fail(c, '找不到此報價單', 404)
+  if (user.role === 'sales' && existing.owner_id !== user.sub) return fail(c, '無權限操作', 403)
+  if (!['approved', 'sent', 'won'].includes(existing.status)) {
+    return fail(c, '僅已核准/已寄出/已成交狀態可開立發票', 400)
+  }
+
+  const body = await c.req.json().catch(() => ({}))
+  const amount = Number(body?.amount)
+  if (!Number.isFinite(amount) || amount <= 0) return fail(c, '請輸入有效金額', 400)
+  const remark = typeof body?.remark === 'string' ? body.remark.trim() || null : null
+  const issueDate = body?.issue_date || new Date().toISOString().slice(0, 10)
+
+  // 依報價單號計算下一個序號（seq），發票編號格式：INV-{報價單日期序號}-{兩位序號}
+  const seqRow = await c.env.DB.prepare('SELECT COALESCE(MAX(seq), 0) as maxSeq FROM invoices WHERE quote_id = ?')
+    .bind(id)
+    .first<{ maxSeq: number }>()
+  const seq = (seqRow?.maxSeq || 0) + 1
+  const invoiceNo = `${existing.quote_no.replace(/^Q-/, 'INV-')}-${String(seq).padStart(2, '0')}`
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO invoices (quote_id, invoice_no, seq, amount, remark, issue_date, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(id, invoiceNo, seq, amount, remark, issueDate, user.sub)
+    .run()
+
+  const invoice = await c.env.DB.prepare(
+    `SELECT i.*, u.name as created_by_name FROM invoices i JOIN users u ON u.id = i.created_by WHERE i.id = ?`
+  )
+    .bind(result.meta.last_row_id)
+    .first()
+
+  return ok(c, invoice, undefined, 201)
+})
+
+// PUT /api/invoices/:invId/paid  標記/取消標記已收款
+quotes.put('/invoices/:invId/paid', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const invId = c.req.param('invId')
+  const invoice = await c.env.DB.prepare('SELECT * FROM invoices WHERE id = ?').bind(invId).first<any>()
+  if (!invoice) return fail(c, '找不到此發票', 404)
+
+  const quote = await getQuoteWithAccess(c.env.DB, user, invoice.quote_id)
+  if (!quote) return fail(c, '無權限操作', 403)
+
+  const body = await c.req.json().catch(() => ({}))
+  const isPaid = body?.is_paid ? 1 : 0
+
+  await c.env.DB.prepare(
+    'UPDATE invoices SET is_paid=?, paid_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+  )
+    .bind(isPaid, isPaid ? new Date().toISOString() : null, invId)
+    .run()
+
+  const updated = await c.env.DB.prepare(
+    `SELECT i.*, u.name as created_by_name FROM invoices i JOIN users u ON u.id = i.created_by WHERE i.id = ?`
+  )
+    .bind(invId)
+    .first()
+  return ok(c, updated)
+})
+
+// DELETE /api/invoices/:invId  刪除發票（僅未收款可刪除）
+quotes.delete('/invoices/:invId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const invId = c.req.param('invId')
+  const invoice = await c.env.DB.prepare('SELECT * FROM invoices WHERE id = ?').bind(invId).first<any>()
+  if (!invoice) return fail(c, '找不到此發票', 404)
+
+  const quote = await getQuoteWithAccess(c.env.DB, user, invoice.quote_id)
+  if (!quote) return fail(c, '無權限操作', 403)
+  if (invoice.is_paid) return fail(c, '此發票已標記收款，無法刪除', 400)
+
+  await c.env.DB.prepare('DELETE FROM invoices WHERE id = ?').bind(invId).run()
+  return ok(c, { deleted: true })
 })
 
 // ============================================================
