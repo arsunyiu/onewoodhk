@@ -1130,7 +1130,7 @@ function sanitizeFileNamePart(name) {
 async function exportQuotePdf(q) {
   const btn = document.getElementById('qd-export-pdf')
   const fileName = `${q.quote_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
-  const outerTitle = `Quotation - ${q.company_name || ''}`.trim()
+  const outerTitle = `${q.quote_no} - ${q.company_name || ''}`.trim()
   await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), fileName, btn, '匯出中...', outerTitle)
 }
 
@@ -1143,6 +1143,6 @@ async function exportInvoicePdf(q, invId) {
   }
   const btn = document.querySelector(`.qd-inv-export[data-inv-id="${invId}"]`)
   const fileName = `${invoice.invoice_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
-  const outerTitle = `Invoice - ${q.company_name || ''}`.trim()
+  const outerTitle = `${invoice.invoice_no} - ${q.company_name || ''}`.trim()
   await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoice), fileName, btn, '', outerTitle)
 }
