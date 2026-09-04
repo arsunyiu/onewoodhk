@@ -515,6 +515,9 @@ quotes.post('/:id/invoices', async (c) => {
   if (!Number.isFinite(amount) || amount <= 0) return fail(c, '請輸入有效金額', 400)
   const remark = typeof body?.remark === 'string' ? body.remark.trim() || null : null
   const issueDate = body?.issue_date || new Date().toISOString().slice(0, 10)
+  // 總共分幾期（選填）：用於發票PDF顯示「第X期／共Y期」，未填則PDF僅顯示「第X期」
+  const installmentTotalRaw = Number(body?.installment_total)
+  const installmentTotal = Number.isFinite(installmentTotalRaw) && installmentTotalRaw > 0 ? Math.round(installmentTotalRaw) : null
 
   // 依報價單號計算下一個序號（seq），發票編號格式：INV-{報價單日期序號}-{兩位序號}
   const seqRow = await c.env.DB.prepare('SELECT COALESCE(MAX(seq), 0) as maxSeq FROM invoices WHERE quote_id = ?')
@@ -524,10 +527,10 @@ quotes.post('/:id/invoices', async (c) => {
   const invoiceNo = `${existing.quote_no.replace(/^Q-/, 'INV-')}-${String(seq).padStart(2, '0')}`
 
   const result = await c.env.DB.prepare(
-    `INSERT INTO invoices (quote_id, invoice_no, seq, amount, remark, issue_date, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO invoices (quote_id, invoice_no, seq, amount, remark, issue_date, installment_total, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   )
-    .bind(id, invoiceNo, seq, amount, remark, issueDate, user.sub)
+    .bind(id, invoiceNo, seq, amount, remark, issueDate, installmentTotal, user.sub)
     .run()
 
   const invoice = await c.env.DB.prepare(

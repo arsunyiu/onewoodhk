@@ -227,6 +227,10 @@ function renderQuoteDetail(q) {
                 </div>
               </div>
               <div>
+                <label class="text-[11px] text-gray-400">總共分幾期（選填，供PDF顯示「第X期／共Y期」，如訂金+尾款共2期）</label>
+                <input id="qd-invoice-installment-total-input" type="number" step="1" min="1" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：2（不填則PDF僅顯示期數，不顯示共幾期）" />
+              </div>
+              <div>
                 <label class="text-[11px] text-gray-400">備註（此張發票專屬，如「訂金 Deposit payment」）</label>
                 <textarea id="qd-invoice-remark-input" rows="2" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：訂金 Deposit payment"></textarea>
               </div>
@@ -544,6 +548,8 @@ function toggleInvoiceAddForm(show) {
     if (amountInput) { amountInput.value = ''; amountInput.focus() }
     const remarkInput = document.getElementById('qd-invoice-remark-input')
     if (remarkInput) remarkInput.value = ''
+    const installmentTotalInput = document.getElementById('qd-invoice-installment-total-input')
+    if (installmentTotalInput) installmentTotalInput.value = ''
   }
 }
 
@@ -585,7 +591,7 @@ function renderQuoteInvoicesList(q) {
           <span class="text-sm font-medium text-gray-800">${Fmt.escapeHtml(inv.invoice_no)}</span>
           <span class="text-xs px-1.5 py-0.5 rounded ${inv.is_paid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'}">${inv.is_paid ? '已收款' : '未收款'}</span>
         </div>
-        <div class="text-xs text-gray-500 mt-0.5">${Fmt.currency(inv.amount, q.currency)} ｜ ${Fmt.date(inv.issue_date)}${inv.remark ? ' ｜ ' + Fmt.escapeHtml(inv.remark) : ''}</div>
+        <div class="text-xs text-gray-500 mt-0.5">${Fmt.currency(inv.amount, q.currency)} ｜ ${Fmt.date(inv.issue_date)} ｜ 第${inv.seq}期${inv.installment_total ? `／共${inv.installment_total}期` : ''}${inv.remark ? ' ｜ ' + Fmt.escapeHtml(inv.remark) : ''}</div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
@@ -613,11 +619,13 @@ async function createQuoteInvoice(q) {
   const amountInput = document.getElementById('qd-invoice-amount-input')
   const dateInput = document.getElementById('qd-invoice-date-input')
   const remarkInput = document.getElementById('qd-invoice-remark-input')
+  const installmentTotalInput = document.getElementById('qd-invoice-installment-total-input')
   const amount = Number(amountInput ? amountInput.value : 0)
   if (!Number.isFinite(amount) || amount <= 0) {
     showToast('請輸入有效金額', 'error')
     return
   }
+  const installmentTotal = installmentTotalInput && installmentTotalInput.value ? Number(installmentTotalInput.value) : undefined
   const btn = document.getElementById('qd-invoice-save-btn')
   const originalHtml = btn ? btn.innerHTML : ''
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>建立中...' }
@@ -625,7 +633,8 @@ async function createQuoteInvoice(q) {
     await API.post(`/quotes/${q.id}/invoices`, {
       amount,
       issue_date: dateInput ? dateInput.value : undefined,
-      remark: remarkInput ? remarkInput.value.trim() : ''
+      remark: remarkInput ? remarkInput.value.trim() : '',
+      installment_total: installmentTotal
     })
     showToast('發票已建立')
     toggleInvoiceAddForm(false)
@@ -774,23 +783,23 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   const signatureBlock = `
     <div class="pdf-row" style="margin-top:24px;">
-      <div style="background:#dce1e7;padding:6px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation :</div>
+      <div style="background:#dce1e7;padding:6px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation 簽署確認 :</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:14px;font-size:11px;color:#1f2937;">
         <div>
-          <div>For on behalf of</div>
+          <div>For on behalf of 代表本公司</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
           <div style="height:60px;"></div>
           <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
-            <div>Signed By :</div>
-            <div>Date :</div>
+            <div>Signed By 簽署人 :</div>
+            <div>Date 簽署確實日期 :</div>
           </div>
         </div>
         <div>
-          <div>Accepted &amp; Confirmed By</div>
+          <div>Accepted &amp; Confirmed By 客戶確認接受</div>
           <div style="height:82px;"></div>
           <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
-            <div>Signed By :</div>
-            <div>Date :</div>
+            <div>Signed By 簽署人 :</div>
+            <div>Date 簽署確實日期 :</div>
           </div>
         </div>
       </div>
@@ -857,13 +866,39 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <tbody>${summaryRows}</tbody>
     </table>`
 
+  // 發票百分比／期數：本次應付金額佔工程總額的比例（如訂金30%），以及所屬期數（第X期／共Y期）
+  // 供客戶清楚核對「總額」與「本次收款」的關係，避免誤以為此發票金額即為工程總額
+  const invoicePercent = isInvoice && Number(q.total_amount) > 0
+    ? Math.round((displayAmount / Number(q.total_amount)) * 1000) / 10
+    : null
+  const invoiceInstallmentLabel = isInvoice
+    ? `第 ${invoiceData.seq || 1} 期${invoiceData.installment_total ? ` ／ 共 ${invoiceData.installment_total} 期` : ''}`
+    : ''
+
   const summaryTotalsHtml = isInvoice ? `
-    <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
-      <div style="width:260px;font-size:12px;">
-        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;padding-top:6px;">
-          <span>Total Due 本次應付</span><span>${Fmt.currency(displayAmount, q.currency, 2)}</span>
-        </div>
-      </div>
+    <div class="pdf-row" style="margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:10px 12px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;color:#4b5563;">
+        <tr>
+          <td style="padding:3px 0;white-space:nowrap;">最後確認工程總額 Confirmed Contract Total</td>
+          <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${Fmt.currency(q.total_amount, q.currency, 2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;white-space:nowrap;">收款期數 Installment</td>
+          <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${esc(invoiceInstallmentLabel)}</td>
+        </tr>
+        ${invoicePercent !== null ? `
+        <tr>
+          <td style="padding:3px 0;white-space:nowrap;">本期應收比例 % of Total</td>
+          <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${invoicePercent}%</td>
+        </tr>` : ''}
+        <tr>
+          <td colspan="2" style="border-top:1px solid #d1d5db;padding-top:6px;"></td>
+        </tr>
+        <tr>
+          <td style="padding:2px 0;font-weight:700;font-size:13px;color:#1f2937;white-space:nowrap;">Total Due 本次應付${invoicePercent !== null ? `（總額 × ${invoicePercent}%）` : ''}</td>
+          <td style="padding:2px 0;text-align:right;font-weight:700;font-size:14px;color:#1f2937;white-space:nowrap;">${Fmt.currency(displayAmount, q.currency, 2)}</td>
+        </tr>
+      </table>
     </div>` : `
     <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
       <div style="width:260px;font-size:12px;">
