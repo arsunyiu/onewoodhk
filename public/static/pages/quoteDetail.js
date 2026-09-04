@@ -995,7 +995,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 //     簽署欄等區塊被從中間裁斷到下一頁
 //   - class="pdf-page-break" 的區塊套用 page-break-before: always，強制
 //     Summary 頁與 Breakdown 頁分頁
-function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
+function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
   return new Promise((resolve) => {
     const originalHtml = btn ? btn.innerHTML : ''
     if (btn) {
@@ -1008,6 +1008,17 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
         btn.disabled = false
         btn.innerHTML = originalHtml
       }
+    }
+
+    // 瀏覽器的列印/另存為 PDF 對話框（包括開啟後在 Adobe Acrobat 等
+    // PDF 檢視器分頁上顯示的標題）實際讀取的是「外層視窗」的 document.title，
+    // 而非 iframe 自己的 <title>。因此在觸發列印前，暫時把外層標題換成
+    // 我們想要的文件標題（例如「Quotation - 客戶名稱」），列印結束後再還原，
+    // 避免影響 SPA 其他頁面顯示的標題。
+    const originalOuterTitle = document.title
+    const desiredOuterTitle = outerTitle || String(fileName || '').replace(/\.pdf$/i, '')
+    const restoreOuterTitle = () => {
+      document.title = originalOuterTitle
     }
 
     const iframe = document.createElement('iframe')
@@ -1059,6 +1070,7 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
       if (done) return
       done = true
       restoreBtn()
+      restoreOuterTitle()
       // 延遲移除 iframe，避免部分瀏覽器在列印對話框仍讀取 iframe 內容時被中途移除
       setTimeout(() => {
         if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
@@ -1071,6 +1083,7 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel) {
       if (printed) return
       printed = true
       try {
+        document.title = desiredOuterTitle
         iframe.contentWindow.focus()
         // afterprint：使用者完成列印/另存為 PDF 對話框（無論確認或取消）後觸發
         iframe.contentWindow.addEventListener('afterprint', finish)
@@ -1117,7 +1130,8 @@ function sanitizeFileNamePart(name) {
 async function exportQuotePdf(q) {
   const btn = document.getElementById('qd-export-pdf')
   const fileName = `${q.quote_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), fileName, btn, '匯出中...')
+  const outerTitle = `Quotation - ${q.company_name || ''}`.trim()
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'quote'), fileName, btn, '匯出中...', outerTitle)
 }
 
 // 匯出單張發票PDF：僅顯示該張發票自己的金額與備註（支援分期收款，如訂金/尾款各自匯出）
@@ -1129,5 +1143,6 @@ async function exportInvoicePdf(q, invId) {
   }
   const btn = document.querySelector(`.qd-inv-export[data-inv-id="${invId}"]`)
   const fileName = `${invoice.invoice_no}_${sanitizeFileNamePart(q.company_name)}.pdf`
-  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoice), fileName, btn, '')
+  const outerTitle = `Invoice - ${q.company_name || ''}`.trim()
+  await renderHtmlToPdfAndSave(buildQuotePdfHtml(q, 'invoice', invoice), fileName, btn, '', outerTitle)
 }
