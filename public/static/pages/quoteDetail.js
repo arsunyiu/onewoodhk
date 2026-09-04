@@ -879,7 +879,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     <div class="pdf-row" style="margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:10px 12px;">
       <table style="width:100%;border-collapse:collapse;font-size:11px;color:#4b5563;">
         <tr>
-          <td style="padding:3px 0;white-space:nowrap;">最後確認工程總額 Confirmed Contract Total</td>
+          <td style="padding:3px 0;white-space:nowrap;">工程總額 Contract Total</td>
           <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${Fmt.currency(q.total_amount, q.currency, 2)}</td>
         </tr>
         <tr>
