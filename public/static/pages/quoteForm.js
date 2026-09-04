@@ -10,6 +10,15 @@ const CURRENCY_OPTIONS = [
   { value: 'CNY', label: 'CNY 人民幣' }
 ]
 
+// 新增報價單時，「備註」欄位預設帶入的客戶條款聲明（可自行編輯或清空，不影響已建立的報價單）
+const DEFAULT_QUOTE_REMARKS =
+`1. This quotation includes construction materials, site measurements, transportation, and installation
+   此報價包含建築材料、現場測量、運輸和安裝費用。
+2. This quotation does not include finish materials (other than custom furniture), lighting, fittings and accessories, door locks, anti-theft facilities, and related non-standard hardware
+   此報價不包含飾面材料（訂製家具除外）、照明設備、配件、門鎖、防盜設施及其他相關非標五金件。
+3. Additional work or any alterations to the items shown in this quotation must be re-negotiated and confirmed by signature
+   本報價單所示項目如需增加工作或進行任何更改，必須重新協商並經雙方簽署確認。`
+
 const QuoteFormState = {
   id: null,
   editable: true,
@@ -202,6 +211,11 @@ function renderQuoteForm(existing) {
               <label class="block text-xs font-medium text-gray-500 mb-1">備註（內部用）</label>
               <textarea id="qf-notes" ${disabled ? 'disabled' : ''} rows="2"
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50">${Fmt.escapeHtml(q.notes || '')}</textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">備註 Remarks <span class="text-gray-400">(會顯示於PDF，新增報價單已預設帶入常用聲明文字，可自行編輯或清空)</span></label>
+              <textarea id="qf-remarks" ${disabled ? 'disabled' : ''} rows="6"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50 font-mono text-xs leading-relaxed">${Fmt.escapeHtml(isEdit ? (q.remarks || '') : DEFAULT_QUOTE_REMARKS)}</textarea>
             </div>
           </div>
 
@@ -510,6 +524,7 @@ async function submitQuoteForm(submitAfter) {
     tax_rate: Number(document.getElementById('qf-tax-rate').value),
     terms: document.getElementById('qf-terms').value.trim() || null,
     notes: document.getElementById('qf-notes').value.trim() || null,
+    remarks: document.getElementById('qf-remarks').value.trim() || null,
     items
   }
   const ownerSel = document.getElementById('qf-owner')

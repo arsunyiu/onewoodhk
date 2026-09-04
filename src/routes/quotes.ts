@@ -9,6 +9,15 @@ import { logAuditFromUser } from '../utils/audit'
 const quotes = new Hono<{ Bindings: Bindings }>()
 quotes.use('*', authMiddleware)
 
+// 新增報價單時預設帶入的備註（客戶條款聲明），使用者可於編輯頁自行修改或清空
+const DEFAULT_QUOTE_REMARKS =
+  '1. This quotation includes construction materials, site measurements, transportation, and installation\n' +
+  '   此報價包含建築材料、現場測量、運輸和安裝費用。\n' +
+  '2. This quotation does not include finish materials (other than custom furniture), lighting, fittings and accessories, door locks, anti-theft facilities, and related non-standard hardware\n' +
+  '   此報價不包含飾面材料（訂製家具除外）、照明設備、配件、門鎖、防盜設施及其他相關非標五金件。\n' +
+  '3. Additional work or any alterations to the items shown in this quotation must be re-negotiated and confirmed by signature\n' +
+  '   本報價單所示項目如需增加工作或進行任何更改，必須重新協商並經雙方簽署確認。'
+
 // 報價單號格式對齊實際業務單據：Q-YYMMDDxxx（如 Q-260512001）
 async function generateQuoteNo(db: D1Database): Promise<string> {
   const today = new Date()
@@ -135,8 +144,8 @@ quotes.post('/', async (c) => {
   const result = await c.env.DB.prepare(
     `INSERT INTO quotes
       (quote_no, customer_id, contact_id, owner_id, status, title, currency, subtotal,
-       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes, site_address)
-     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes, remarks, site_address)
+     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       quoteNo,
@@ -154,6 +163,7 @@ quotes.post('/', async (c) => {
       validUntil,
       body.terms || null,
       body.notes || null,
+      body.remarks !== undefined ? (body.remarks || null) : DEFAULT_QUOTE_REMARKS,
       body.site_address || null
     )
     .run()
@@ -277,7 +287,7 @@ quotes.put('/:id', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE quotes SET title=?, contact_id=?, owner_id=?, currency=?, subtotal=?, discount_type=?, discount_value=?,
-       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, site_address=?,
+       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, remarks=?, site_address=?,
        status = CASE WHEN status='rejected' THEN 'draft' ELSE status END,
        updated_at=CURRENT_TIMESTAMP
      WHERE id=?`
@@ -296,6 +306,7 @@ quotes.put('/:id', async (c) => {
       body.valid_until ?? existing.valid_until,
       body.terms ?? existing.terms,
       body.notes ?? existing.notes,
+      body.remarks ?? existing.remarks,
       body.site_address ?? existing.site_address,
       id
     )

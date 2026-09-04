@@ -252,6 +252,12 @@ function renderQuoteDetail(q) {
             <p class="text-sm text-gray-600 whitespace-pre-line">${Fmt.escapeHtml(q.terms)}</p>
           </div>` : ''}
 
+          ${q.remarks ? `
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 class="text-sm font-semibold text-gray-700 mb-2">備註 Remarks</h2>
+            <p class="text-sm text-gray-600 whitespace-pre-line">${Fmt.escapeHtml(q.remarks)}</p>
+          </div>` : ''}
+
           ${q.notes ? `
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-2">內部備註</h2>
@@ -780,6 +786,13 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="font-size:11px;color:#4b5563;white-space:pre-line;margin-bottom:6px;">${esc(q.terms)}</div>
     </div>` : '')
 
+  // 報價單：備註 Remarks（客戶條款聲明，如材料範圍/不包含項目/變更需簽署確認等），發票不顯示
+  const remarksBlock = (!isInvoice && q.remarks) ? `
+    <div class="pdf-row" style="margin-top:18px;">
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">Remarks 備註</div>
+      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.6;">${esc(q.remarks)}</div>
+    </div>` : ''
+
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   const signatureBlock = `
     <div class="pdf-row" style="margin-top:24px;">
@@ -935,6 +948,8 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     </div>
 
     ${termsBlock}
+
+    ${remarksBlock}
 
     ${signatureBlock}
 
