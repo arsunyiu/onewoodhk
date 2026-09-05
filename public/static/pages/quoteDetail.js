@@ -774,43 +774,58 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
   // 發票：顯示該張發票自己的備註（invoiceData.remark，如「訂金 Deposit payment」），不顯示報價單固定條款/免責聲明
   // 報價單：維持原有「條款/付款方式」（固定免責聲明清單已按需求移除）
-  const termsBlock = isInvoice
+  // 註：此處僅產生區塊「內容」（不含外層 pdf-row/margin 包裝），因為需與「收款資訊」
+  // 併排成左右兩欄以節省版面高度（見下方 bankTermsBlock），故包裝統一交由外層處理
+  const termsInnerHtml = isInvoice
     ? (invoiceData.remark ? `
-    <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">備註</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceData.remark)}</div>
-    </div>` : '')
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceData.remark)}</div>` : '')
     : (q.terms ? `
-    <div class="pdf-row" style="margin-top:18px;">
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;margin-bottom:6px;">${esc(q.terms)}</div>
-    </div>` : '')
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(q.terms)}</div>` : '')
+
+  // 收款資訊：與條款/付款方式並排兩欄顯示（節省版面高度，讓 SUMMARY 頁含簽署確認欄能收在同一頁）
+  const bankInfoInnerHtml = `
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
+      <div style="font-size:11px;color:#4b5563;line-height:1.5;">
+        <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
+        <div>Account No.: ${esc(COMPANY_INFO.bank.accountNo)}</div>
+        <div>Name: ${esc(COMPANY_INFO.bank.accountName)}</div>
+        <div>轉數快(FPS) 電話號碼: ${esc(COMPANY_INFO.bank.fpsPhone)}</div>
+      </div>`
+
+  const bankTermsBlock = `
+    <div class="pdf-row" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+      <div>${bankInfoInnerHtml}</div>
+      <div>${termsInnerHtml}</div>
+    </div>`
 
   // 報價單：備註 Remarks（客戶條款聲明，如材料範圍/不包含項目/變更需簽署確認等），發票不顯示
   const remarksBlock = (!isInvoice && q.remarks) ? `
-    <div class="pdf-row" style="margin-top:18px;">
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">Remarks 備註</div>
-      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.6;">${esc(q.remarks)}</div>
+    <div class="pdf-row" style="margin-top:12px;">
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:3px;">Remarks 備註</div>
+      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.45;">${esc(q.remarks)}</div>
     </div>` : ''
 
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
+  // 簽名留白高度已縮減，確保整個 SUMMARY 頁（含此簽署欄）能收在同一頁，不再溢出到下一頁
   const signatureBlock = `
-    <div class="pdf-row" style="margin-top:24px;">
-      <div style="background:#dce1e7;padding:6px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation 簽署確認 :</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:14px;font-size:11px;color:#1f2937;">
+    <div class="pdf-row" style="margin-top:14px;">
+      <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation 簽署確認 :</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
         <div>
           <div>For on behalf of 代表本公司</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
-          <div style="height:60px;"></div>
-          <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
+          <div style="height:32px;"></div>
+          <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
             <div>Signed By 簽署人 :</div>
             <div>Date 簽署確實日期 :</div>
           </div>
         </div>
         <div>
           <div>Accepted &amp; Confirmed By 客戶確認接受</div>
-          <div style="height:82px;"></div>
-          <div style="border-top:1.5px solid #1f2937;padding-top:4px;line-height:1.8;">
+          <div style="height:54px;"></div>
+          <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
             <div>Signed By 簽署人 :</div>
             <div>Date 簽署確實日期 :</div>
           </div>
@@ -933,27 +948,17 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
     ${summaryTotalsHtml}
 
-    <div class="pdf-row" style="margin-top:14px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:8px;">
+    <div class="pdf-row" style="margin-top:10px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:6px;">
       ${esc(Fmt.amountInWords(displayAmount, q.currency))}
     </div>
 
-    <div class="pdf-row" style="margin-top:22px;">
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
-      <div style="font-size:11px;color:#4b5563;line-height:1.6;">
-        <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
-        <div>Account No.: ${esc(COMPANY_INFO.bank.accountNo)}</div>
-        <div>Name: ${esc(COMPANY_INFO.bank.accountName)}</div>
-        <div>轉數快(FPS) 電話號碼: ${esc(COMPANY_INFO.bank.fpsPhone)}</div>
-      </div>
-    </div>
-
-    ${termsBlock}
+    ${bankTermsBlock}
 
     ${remarksBlock}
 
     ${signatureBlock}
 
-    <div class="pdf-row" style="margin-top:26px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
+    <div class="pdf-row" style="margin-top:14px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
       ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
     </div>`
 
