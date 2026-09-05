@@ -1050,7 +1050,7 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
   body {
     font-family: -apple-system, 'PingFang TC', 'Noto Sans CJK TC', 'Microsoft JhengHei', Helvetica, Arial, sans-serif;
     color: #1f2937;
-    padding: 3mm 10mm 10mm 10mm;
+    padding: 11mm 10mm 10mm 10mm;
   }
   table { border-collapse: collapse; width: 100%; }
   .pdf-row { page-break-inside: avoid; }
