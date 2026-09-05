@@ -846,15 +846,15 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">${docLabel}</div>
     </div>
 
-    <div style="font-size:11px;color:#6b7280;margin-top:10px;line-height:1.5;">
+    <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.4;">
       <div>${esc(COMPANY_INFO.addressZh)}</div>
       <div>${esc(COMPANY_INFO.addressEn)}</div>
       <div>Tel: ${esc(COMPANY_INFO.phone)} ｜ ${esc(COMPANY_INFO.email)} ｜ ${esc(COMPANY_INFO.website)}</div>
     </div>
 
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:10px 0;">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:12px;">
       <div><span style="font-weight:700;">${docNoLabel}</span>${esc(docNo)}</div>
       <div><span style="font-weight:700;">${issueDateLabel}</span>${issueDate}</div>
       ${isInvoice
@@ -864,7 +864,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">工程地址：</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
-    <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:16px;padding-bottom:8px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
+    <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:10px;padding-bottom:6px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
 
   // ---- Summary 頁：報價單顯示各分類滙總（仿照參考報價單 SUMMARY 頁）；
   // 發票僅顯示此張發票專屬的金額與備註，不套用報價單全額/合併備註（支援分期收款） ----
@@ -1050,12 +1050,12 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
   body {
     font-family: -apple-system, 'PingFang TC', 'Noto Sans CJK TC', 'Microsoft JhengHei', Helvetica, Arial, sans-serif;
     color: #1f2937;
-    padding: 12mm 10mm;
+    padding: 3mm 10mm 10mm 10mm;
   }
   table { border-collapse: collapse; width: 100%; }
   .pdf-row { page-break-inside: avoid; }
   .pdf-page-break { page-break-before: always; }
-  @page { size: A4; margin: 10mm 8mm 14mm 8mm; }
+  @page { size: A4; margin: 6mm 8mm 12mm 8mm; }
   @media print {
     .pdf-row { page-break-inside: avoid; }
     .pdf-page-break { page-break-before: always; }
