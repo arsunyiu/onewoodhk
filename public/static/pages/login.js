@@ -13,7 +13,7 @@ Pages.login = function () {
           <img src="/static/images/logo.png" alt="一木工程" class="w-full h-full object-contain" />
         </div>
         <h1 class="text-2xl font-bold text-ink-50 tracking-wide">一木工程</h1>
-        <p class="text-primary-500 text-[11px] mt-1 tracking-label uppercase">One Wood Limited &middot; MUI Suite</p>
+        <p class="text-primary-500 text-[11px] mt-1 tracking-label uppercase">One Wood Limited</p>
         <p class="text-ink-400 text-sm mt-2">B2B 報價管理 · 客戶關係 · 銷售一體化平台</p>
       </div>
 

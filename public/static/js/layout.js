@@ -69,7 +69,7 @@ function renderLayout(activeKey) {
         </div>
         <div class="min-w-0">
           <p class="font-bold text-sm text-ink-50 leading-tight truncate">一木工程</p>
-          <p class="text-[10px] text-primary-500 tracking-label uppercase leading-tight">MUI Suite</p>
+          <p class="text-[10px] text-primary-500 tracking-label uppercase leading-tight">One Wood</p>
         </div>
       </div>
       <nav class="flex-1 px-3 pt-4 overflow-y-auto">${menuHtml}</nav>
