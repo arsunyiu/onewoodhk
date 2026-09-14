@@ -101,10 +101,14 @@ Pages.dashboard = async function () {
       API.get('/dashboard/summary'),
       API.get('/reports/summary?range=180d'),
       API.get('/projects/summary'),
-      API.get('/projects?status=in_progress&page_size=8'),
+      // 首頁「進行中工程」清單：涵蓋所有尚未結束的工程（未開工/進行中/暫停），
+      // 不只 in_progress，讓剛成交、尚未開工的新工程也能顯示、方便盡快安排開工
+      API.get('/projects?page_size=50'),
       isManager ? API.get('/finance/summary').catch(() => null) : Promise.resolve(null)
     ])
-    renderDashboard(dashRes.data, reportsRes.data, projSummaryRes.data, activeProjRes.data || [], financeRes ? financeRes.data : null)
+    // 僅保留尚未結束的工程（未開工/進行中/暫停），排除已完工/已取消
+    const activeProjects = (activeProjRes.data || []).filter((p) => ['not_started', 'in_progress', 'paused'].includes(p.status))
+    renderDashboard(dashRes.data, reportsRes.data, projSummaryRes.data, activeProjects, financeRes ? financeRes.data : null)
   } catch (err) {
     showToast(err.message, 'error')
   }
@@ -260,6 +264,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
   `
 
   // ---------- 進行中工程（Gantt 風格列表） ----------
+  // 涵蓋所有尚未結束的工程（未開工/進行中/暫停），已完工/已取消不顯示於此清單
   const gantt = document.getElementById('dash-gantt')
   if (!activeProjects.length) {
     gantt.innerHTML = `<p class="text-ink-400 text-center py-8"><i class="fas fa-helmet-safety text-2xl block mb-2"></i>目前沒有進行中的工程</p>`
@@ -267,7 +272,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
     gantt.innerHTML = activeProjects
       .map((p) => {
         const pct = p.progress_percent || 0
-        const phase = dashPhaseOf(pct)
+        const phase = dashPhaseOf(pct, p.status)
         return `
       <a href="/projects/${p.id}" class="grid grid-cols-[1fr_auto] md:grid-cols-[180px_1fr_50px] items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-surface-200 border-b border-line last:border-b-0">
         <div class="min-w-0">
@@ -358,7 +363,7 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
       .slice(0, 6)
       .map((p, i) => {
         const color = DASH_PALETTE[i % DASH_PALETTE.length]
-        const phase = dashPhaseOf(p.progress_percent || 0)
+        const phase = dashPhaseOf(p.progress_percent || 0, p.status)
         return `
       <a href="/projects/${p.id}" class="group relative rounded-lg overflow-hidden aspect-square flex items-end p-2"
          style="background:linear-gradient(155deg, ${color}CC 0%, ${color} 100%)">
@@ -406,8 +411,10 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
   }
 }
 
-// 依進度百分比推估目前施工階段標籤（工程資料未細分階段欄位，以進度區間近似呈現）
-function dashPhaseOf(pct) {
+// 依工程狀態 + 進度百分比推估目前施工階段標籤（工程資料未細分階段欄位，以進度區間近似呈現）
+function dashPhaseOf(pct, status) {
+  if (status === 'not_started') return { label: '未開工', color: 'bg-ink-400' }
+  if (status === 'paused') return { label: '暫停中', color: 'bg-wood-500' }
   if (pct >= 100) return { label: '已完工・驗收', color: 'bg-good-500' }
   if (pct >= 75) return { label: '木作・完工階段', color: 'bg-primary-500' }
   if (pct >= 50) return { label: '系統櫃・油漆', color: 'bg-info-500' }
