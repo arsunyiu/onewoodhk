@@ -85,6 +85,9 @@ function renderLayout(activeKey) {
             <p class="text-xs text-ink-400 uppercase tracking-label">${Auth.roleLabel(user?.role)}</p>
           </div>
         </a>
+        <button onclick="I18n.toggle()" class="mt-1 w-full flex items-center gap-2 px-2 py-2 text-sm text-ink-400 hover:text-primary-500 hover:bg-surface-200 rounded-lg transition">
+          <i class="fas fa-language w-5 text-center"></i> ${I18n.getLang() === 'en' ? '中文' : 'English'}
+        </button>
         <button onclick="Auth.logout()" class="mt-1 w-full flex items-center gap-2 px-2 py-2 text-sm text-ink-400 hover:text-bad-400 hover:bg-bad-50 rounded-lg transition">
           <i class="fas fa-arrow-right-from-bracket w-5 text-center"></i> 登出
         </button>

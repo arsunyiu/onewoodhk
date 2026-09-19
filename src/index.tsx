@@ -120,6 +120,7 @@ function pageShell(title: string) {
   <script src="/static/js/auth.js"></script>
   <script src="/static/js/utils.js"></script>
   <script src="/static/js/companyInfo.js"></script>
+  <script src="/static/js/i18n.js"></script>
   <script src="/static/js/layout.js"></script>
   <script src="/static/pages/login.js"></script>
   <script src="/static/pages/dashboard.js"></script>
