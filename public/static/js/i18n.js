@@ -19,6 +19,40 @@ const I18n = (function () {
 
   // 字典：依中文詞組長度由長到短排序（避免短詞先比對到，截斷長詞組的翻譯）
   const DICT = {
+  // 報價/發票項目常用「位置」欄位詞組（供報價 PDF 英文版翻譯 item.location 自由文字用）
+  "主人睡房、客睡房、小孩睡房(地台)": "Master/Guest/Children's Bedroom (Floor)",
+  "全屋單位(除浴室和廚房外)": "Whole Unit (Excluding Bathroom & Kitchen)",
+  "客廳和飯廳、睡房(牆身)": "Living/Dining Room & Bedroom (Wall)",
+  "客廳和飯廳、睡房(天花)": "Living/Dining Room & Bedroom (Ceiling)",
+  "主人浴室和客廁(牆身)": "Master Bathroom & Guest Toilet (Wall)",
+  "主人浴室和客廁(地台)": "Master Bathroom & Guest Toilet (Floor)",
+  "廚房及主人浴室和客廁": "Kitchen, Master Bathroom & Guest Toilet",
+  "廚房、主人浴室和客廁": "Kitchen, Master Bathroom & Guest Toilet",
+  "客廳和飯廳(地台)": "Living & Dining Room (Floor)",
+  "主人浴室和客廁": "Master Bathroom & Guest Toilet",
+  "主人浴室、客廁": "Master Bathroom, Guest Toilet",
+  "廚房(牆身)": "Kitchen (Wall)",
+  "廚房(天花)": "Kitchen (Ceiling)",
+  "廚房(地台)": "Kitchen (Floor)",
+  "露台(地台)": "Balcony (Floor)",
+  "小孩睡房": "Children's Bedroom",
+  "主人睡房": "Master Bedroom",
+  "全屋單位": "Whole Unit",
+  "入口大門": "Entrance Door",
+  "主人浴室": "Master Bathroom",
+  "客睡房": "Guest Bedroom",
+  "廚房": "Kitchen",
+  "客廁": "Guest Toilet",
+  "浴室": "Bathroom",
+  "睡房": "Bedroom",
+  "客廳": "Living Room",
+  "飯廳": "Dining Room",
+  "露台": "Balcony",
+  "陽台": "Balcony",
+  "天花": "Ceiling",
+  "牆身": "Wall",
+  "地台": "Floor",
+  "門口": "Doorway",
   "新混凝土工程 - 樓板/牆體/隔間 (New concreting works: Floor slab/Wall/Partition)": "New Concreting Works - Floor Slab/Wall/Partition",
   "新混凝土工程 - 圍牆(1100mm高) (New concreting works: Parapet wall 1100mmH)": "New Concreting Works - Parapet Wall (1100mm High)",
   "新模板工程 - 樓板/牆體/隔間 (New formworks: Floor slab/Wall/Partition)": "New Formworks - Floor Slab/Wall/Partition",
@@ -1008,7 +1042,7 @@ const I18n = (function () {
     }
   }
 
-  return { getLang, setLang, translate, toggle, init, DICT }
+  return { getLang, setLang, translate, translateText, toggle, init, DICT }
 })()
 
 I18n.init()

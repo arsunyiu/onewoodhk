@@ -34,6 +34,11 @@ const Fmt = {
   amountInWords(amount, currency) {
     const currencyName = CURRENCY_WORDS[currency] || CURRENCY_WORDS.HKD
     return `SAY ${currencyName} ${numberToEnglishWords(amount)} ONLY`
+  },
+  // 將金額轉為中文大寫唸法（如「港幣壹萬貳仟叁佰肆拾伍元整」），供中文版報價 PDF Summary 頁顯示
+  amountInWordsZh(amount, currency) {
+    const currencyName = CURRENCY_WORDS_ZH[currency] || CURRENCY_WORDS_ZH.HKD
+    return `${currencyName}${numberToChineseCapital(amount)}`
   }
 }
 
@@ -41,6 +46,7 @@ const Fmt = {
 // 英文金額大寫轉換（用於報價 PDF Summary 頁）
 // ============================================================
 const CURRENCY_WORDS = { HKD: 'HONG KONG DOLLARS', TWD: 'NEW TAIWAN DOLLARS', USD: 'US DOLLARS', CNY: 'CHINESE YUAN' }
+const CURRENCY_WORDS_ZH = { HKD: '港幣', TWD: '新台幣', USD: '美元', CNY: '人民幣' }
 const NUM_ONES = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN',
   'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN']
 const NUM_TENS = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY']
@@ -75,6 +81,68 @@ function numberToEnglishWords(num) {
     unitIdx += 1
   }
   return (num < 0 ? 'MINUS ' : '') + parts.join(' ').trim()
+}
+
+// ============================================================
+// 中文金額大寫轉換（如「壹萬貳仟叁佰肆拾伍元整」，用於中文版報價 PDF Summary 頁）
+// ============================================================
+const CN_NUM = ['零', '壹', '貳', '叁', '肆', '伍', '陸', '柒', '捌', '玖']
+const CN_UNIT = ['', '拾', '佰', '仟']
+const CN_BIG_UNIT = ['', '萬', '億', '兆']
+
+function convertIntegerToChineseCapital(n) {
+  if (n === 0) return '零'
+  let str = String(n)
+  const groups = []
+  while (str.length > 0) {
+    groups.unshift(str.slice(-4))
+    str = str.slice(0, -4)
+  }
+  let out = ''
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi]
+    const bigUnitIdx = groups.length - 1 - gi
+    const gnum = parseInt(g, 10)
+    let groupStr = ''
+    let pendingZero = false
+    for (let i = 0; i < g.length; i++) {
+      const d = parseInt(g[i], 10)
+      const unitIdx = g.length - 1 - i
+      if (d === 0) {
+        pendingZero = true
+      } else {
+        if (pendingZero) { groupStr += '零'; pendingZero = false }
+        groupStr += CN_NUM[d] + CN_UNIT[unitIdx]
+      }
+    }
+    if (gnum > 0) {
+      // 跨組補零：例如 1000345 → 前組(100)非空、本組(0345)首位為0，需補零銜接
+      if (out && groupStr && !groupStr.startsWith('零')) out += '零'
+      out += groupStr + CN_BIG_UNIT[bigUnitIdx]
+    }
+  }
+  return out || '零'
+}
+
+function numberToChineseCapital(num) {
+  num = Math.round(Number(num || 0) * 100) / 100
+  const negative = num < 0
+  num = Math.abs(num)
+  const yuan = Math.floor(num + 1e-9)
+  const cents = Math.round((num - yuan) * 100)
+  const jiao = Math.floor(cents / 10)
+  const fen = cents % 10
+
+  let result = convertIntegerToChineseCapital(yuan) + '元'
+  if (jiao === 0 && fen === 0) {
+    result += '整'
+  } else {
+    if (jiao === 0 && fen > 0) result += '零'
+    if (jiao > 0) result += CN_NUM[jiao] + '角'
+    if (fen > 0) result += CN_NUM[fen] + '分'
+    else if (jiao > 0) result += '整'
+  }
+  return (negative ? '負' : '') + result
 }
 
 const QuoteStatusMeta = {
@@ -120,7 +188,8 @@ const CATEGORY_EN = {
   '設備安裝工程': 'EQUIPMENT INSTALLATION WORKS',
   '客制化': 'CUSTOMIZATION WORKS',
   '雜項': 'MISCELLANEOUS ITEMS',
-  '結構工程': 'STRUCTURAL WORKS'
+  '結構工程': 'STRUCTURAL WORKS',
+  '其他項目': 'OTHER ITEMS'
 }
 // 分類雙語顯示：「中文(English)」；若分類帶有「X. 」字母前綴（自訂分類慣例，如「Z. 客制化」），
 // 一律先去除前綴取出純分類名稱再查英文對照並拼接，確保與標準分類一樣呈現乾淨的「中文(English)」，
@@ -171,6 +240,31 @@ function categoryHeaderWithLetter(category) {
   if (idx >= 0 && idx < 26) return `${String.fromCharCode(65 + idx)}  ${categoryBilingual(category)}`
   const parsed = parseCategoryLetterPrefix(category)
   return parsed ? `${parsed.letter}  ${categoryBilingual(parsed.name)}` : categoryBilingual(category)
+}
+// 將 CATEGORY_EN 的全大寫英文（如 "PRELIMINARY WORKS"）轉為 Title Case（"Preliminary Works"），
+// 供純英文版報價 PDF 顯示（避免全大寫在正式文件中顯得不自然）
+function toTitleCase(str) {
+  return String(str || '').toLowerCase().replace(/(^|\s|&\s*)([a-z])/g, (m, sep, ch) => sep + ch.toUpperCase())
+}
+// 純語言版分類名稱（不含字母前綴、不含雙語括號）：lang='en' 回傳英文 Title Case，
+// 其他情況回傳純中文名稱。查無英文對照的自訂分類，英文模式下退回原中文名稱。
+// 專供中/英分離版報價 PDF 使用（畫面 UI 的中英混合雙語顯示則仍用 categoryBilingual）
+function categoryNamePure(category, lang) {
+  if (!category) return category
+  const parsed = parseCategoryLetterPrefix(category)
+  const pureName = parsed ? parsed.name : category
+  if (lang === 'en') {
+    const en = CATEGORY_EN[pureName]
+    return en ? toTitleCase(en) : pureName
+  }
+  return pureName
+}
+// 分類分組標題文字之純語言版（供中/英分離版報價 PDF 使用），如英文 "A  Preliminary Works"
+// 或中文 "A  前期工程"，不含另一語言括號內容
+function categoryHeaderPure(category, lang) {
+  const letter = categoryLetter(category)
+  const name = categoryNamePure(category, lang)
+  return letter ? `${letter}  ${name}` : name
 }
 // 依「分類字母 + 分類內建立順序（產品id由小到大）」為產品編上 A1, A2, B1... 編號，
 // 方便在產品目錄與報價單選用產品時尋找/對照。日後新增產品只會接在該分類最後一個編號之後，

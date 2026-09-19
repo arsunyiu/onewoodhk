@@ -704,17 +704,86 @@ function runQuoteRejectAction(id) {
 // invoiceData: 匯出發票時傳入該張發票的獨立資料 { invoice_no, amount, remark, issue_date }，
 // 使每張發票 PDF 只顯示該筆金額與備註（支援分期收款，不再套用報價單全額/合併備註）
 // ============================================================
+// PDF 各語言版面固定文字標籤（純中文／純英文兩套，依 I18n.getLang() 選用，不再中英混雜顯示）
+const PDF_LABELS = {
+  zh: {
+    docLabelQuote: '報價單', docLabelInvoice: '發票',
+    docNoLabelQuote: '報價單號：', docNoLabelInvoice: '發票編號：',
+    issueDateLabelQuote: '日期：', issueDateLabelInvoice: '發票日期：',
+    relatedQuoteNo: '對應報價單號：', validUntil: '有效期限：',
+    customer: '客戶：', siteAddress: '工程地址：',
+    summaryTitle: '滙總', breakdownTitle: '細分報價',
+    itemCol: '項目', descCol: '說明', amountCol: '金額', noCol: '編號',
+    locationCol: '位置', qtyCol: '數量', unitCol: '單位', priceCol: '單價', subtotalCol: '小計',
+    subtotalLabel: '小計',
+    amountDue: (quoteNo) => `本次應付款項（對應報價單 ${quoteNo}）`,
+    remarkTitle: '備註', termsTitle: '條款/付款方式', bankInfoTitle: '收款資訊',
+    bankLabel: '銀行：', accountNoLabel: '帳號：', accountNameLabel: '戶名：', fpsLabel: '轉數快(FPS) 電話號碼：',
+    remarksTitle: '備註',
+    signTitle: '簽署確認：', signOnBehalf: '代表本公司', signAccepted: '客戶確認接受',
+    signBy: '簽署人：', signDate: '簽署確實日期：',
+    contractTotal: '工程總額', installmentLabel: '收款期數', percentOfTotal: '本期應收比例',
+    totalDue: '本次應付', totalDueWithPct: (pct) => `本次應付（總額 × ${pct}%）`,
+    discountLabel: (pct) => pct !== null ? `折扣 (${pct}%)` : '折扣',
+    taxLabel: (pct) => `稅額 (${pct}%)`,
+    grandTotal: '總計', total: '合計',
+    installmentText: (seq, total) => `第 ${seq} 期${total ? ` ／ 共 ${total} 期` : ''}`
+  },
+  en: {
+    docLabelQuote: 'QUOTATION', docLabelInvoice: 'INVOICE',
+    docNoLabelQuote: 'Quotation No.: ', docNoLabelInvoice: 'Invoice No.: ',
+    issueDateLabelQuote: 'Date: ', issueDateLabelInvoice: 'Invoice Date: ',
+    relatedQuoteNo: 'Related Quotation No.: ', validUntil: 'Valid Until: ',
+    customer: 'Customer: ', siteAddress: 'Site Address: ',
+    summaryTitle: 'SUMMARY', breakdownTitle: 'BREAKDOWN',
+    itemCol: 'Item', descCol: 'Description', amountCol: 'Amount', noCol: 'No.',
+    locationCol: 'Location', qtyCol: 'Qty', unitCol: 'Unit', priceCol: 'Unit Price', subtotalCol: 'Sub-total',
+    subtotalLabel: 'Sub-total',
+    amountDue: (quoteNo) => `Amount Due (Ref. Quotation ${quoteNo})`,
+    remarkTitle: 'Remarks', termsTitle: 'Terms & Payment', bankInfoTitle: 'Payment Details',
+    bankLabel: 'Bank: ', accountNoLabel: 'Account No.: ', accountNameLabel: 'Name: ', fpsLabel: 'FPS Phone No.: ',
+    remarksTitle: 'Remarks',
+    signTitle: 'Signed & Confirmation:', signOnBehalf: 'For and on behalf of', signAccepted: 'Accepted & Confirmed By',
+    signBy: 'Signed By: ', signDate: 'Date: ',
+    contractTotal: 'Contract Total', installmentLabel: 'Installment', percentOfTotal: '% of Total',
+    totalDue: 'Total Due', totalDueWithPct: (pct) => `Total Due (Total × ${pct}%)`,
+    discountLabel: (pct) => pct !== null ? `Discount (${pct}%)` : 'Discount',
+    taxLabel: (pct) => `Tax (${pct}%)`,
+    grandTotal: 'Grand Total', total: 'Total',
+    installmentText: (seq, total) => `Installment #${seq}${total ? ` of ${total}` : ''}`
+  }
+}
+
 function buildQuotePdfHtml(q, docType, invoiceData) {
   docType = docType || 'quote'
   const isInvoice = docType === 'invoice'
-  const siteAddress = q.site_address || q.customer_address || ''
   const esc = Fmt.escapeHtml
-  const docLabel = isInvoice ? '發票 INVOICE' : '報價單 QUOTATION'
+  // PDF 語言：跟隨畫面目前切換的語言（I18n.getLang()），中文模式輸出純中文模版，
+  // 英文模式輸出純英文模版（不再像畫面 UI 那樣中英混雜顯示）
+  const lang = (typeof I18n !== 'undefined' && I18n.getLang() === 'en') ? 'en' : 'zh'
+  const L = PDF_LABELS[lang]
+  // 自由文字欄位（項目名稱/說明/位置/產品目錄資料）在英文模式下透過 I18n 字典比對翻譯；
+  // 查無對應英文的部分維持原文（比中英混雜更符合「純語言模版」原則的折衷）
+  const tr = (text) => (lang === 'en' && typeof I18n !== 'undefined') ? I18n.translateText(text) : text
+  // 條款/備註/發票備註等「使用者自由輸入的長篇文字」：這類內容是完整句子/條款段落，
+  // 若逐詞套用字典替換（如「期」→"installment"、「物料」→"Material"）會插入到句子中間，
+  // 產生不成句的破碎英文（如「付款installment數細節」），比維持原文更糟。
+  // 故此類自由段落一律保留使用者原文，不做自動詞彙替換；短版且結構化的欄位
+  // （項目名稱/說明/位置/分類，見 tr()）因來源可控、已有完整字串對照，才適用字典翻譯。
+  const trFreeText = (text) => text
+
+  const siteAddress = tr(q.site_address || q.customer_address || '')
+  const docLabel = isInvoice ? L.docLabelInvoice : L.docLabelQuote
   const docNo = isInvoice ? invoiceData.invoice_no : q.quote_no
-  const docNoLabel = isInvoice ? '發票編號：' : '報價單號：'
+  const docNoLabel = isInvoice ? L.docNoLabelInvoice : L.docNoLabelQuote
   const issueDate = isInvoice ? Fmt.date(invoiceData.issue_date) : Fmt.date(q.created_at)
-  const issueDateLabel = isInvoice ? '發票日期：' : '日期：'
-  const footerNote = isInvoice ? COMPANY_INFO.invoiceFooterNote : COMPANY_INFO.footerNote
+  const issueDateLabel = isInvoice ? L.issueDateLabelInvoice : L.issueDateLabelQuote
+  const footerNote = isInvoice
+    ? (lang === 'en' ? COMPANY_INFO.invoiceFooterNoteEn : COMPANY_INFO.invoiceFooterNote)
+    : (lang === 'en' ? COMPANY_INFO.footerNoteEn : COMPANY_INFO.footerNote)
+  const companyName = lang === 'en' ? COMPANY_INFO.nameEn : COMPANY_INFO.nameZh
+  const companyAddress = lang === 'en' ? COMPANY_INFO.addressEn : COMPANY_INFO.addressZh
+  const bankName = lang === 'en' ? COMPANY_INFO.bank.nameEn : COMPANY_INFO.bank.name
   // 發票金額：使用該張發票自己的金額（分期收款），而非報價單全額
   const displayAmount = isInvoice ? Number(invoiceData.amount) : Number(q.total_amount)
 
@@ -731,21 +800,21 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       return `
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:6px 4px;color:#9ca3af;">${runningIdx}</td>
-      <td style="padding:6px 4px;color:#4b5563;">${esc(it.location || '-')}</td>
-      <td style="padding:6px 4px;color:#1f2937;">${esc(it.item_name)}${it.description ? `<div style="font-size:10px;color:#4b5563;margin-top:1px;">${esc(it.description)}</div>` : ''}</td>
+      <td style="padding:6px 4px;color:#4b5563;">${esc(tr(it.location) || '-')}</td>
+      <td style="padding:6px 4px;color:#1f2937;">${esc(tr(it.item_name))}${it.description ? `<div style="font-size:10px;color:#4b5563;margin-top:1px;">${esc(tr(it.description))}</div>` : ''}</td>
       <td style="padding:6px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
-      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${esc(it.unit)}</td>
+      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${esc(tr(it.unit))}</td>
       <td style="padding:6px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
       <td style="padding:6px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
     </tr>`
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:0px 4px 12px 4px;line-height:1;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderWithLetter(group.category))}</td>
+      <td colspan="7" style="padding:0px 4px 12px 4px;line-height:1;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderPure(group.category, lang))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
-      <td colspan="6" style="padding:5px 4px;text-align:right;font-size:10px;color:#6b7280;">Sub-total 小計</td>
+      <td colspan="6" style="padding:5px 4px;text-align:right;font-size:10px;color:#6b7280;">${L.subtotalLabel}</td>
       <td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:700;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
     </tr>`
   }).join('')
@@ -754,7 +823,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   const summaryRows = itemGroups.map((group) => `
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
       <td style="padding:7px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
-      <td style="padding:7px 6px;color:#1f2937;">${esc(categoryBilingual(group.category))}</td>
+      <td style="padding:7px 6px;color:#1f2937;">${esc(categoryNamePure(group.category, lang))}</td>
       <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>`).join('')
 
@@ -762,13 +831,13 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
   const discountRow = q.discount_value ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
-      <span>${q.discount_type === 'percent' ? `折扣 (${q.discount_value}%)` : '折扣'}</span>
+      <span>${L.discountLabel(q.discount_type === 'percent' ? q.discount_value : null)}</span>
       <span>-${Fmt.currency(discountAmount, q.currency, 2)}</span>
     </div>` : ''
 
   const taxRow = q.tax_amount ? `
     <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
-      <span>稅額 (${(q.tax_rate * 100).toFixed(0)}%)</span>
+      <span>${L.taxLabel((q.tax_rate * 100).toFixed(0))}</span>
       <span>${Fmt.currency(q.tax_amount, q.currency, 2)}</span>
     </div>` : ''
 
@@ -778,20 +847,20 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 併排成左右兩欄以節省版面高度（見下方 bankTermsBlock），故包裝統一交由外層處理
   const termsInnerHtml = isInvoice
     ? (invoiceData.remark ? `
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">備註</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(invoiceData.remark)}</div>` : '')
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.remarkTitle}</div>
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(trFreeText(invoiceData.remark))}</div>` : '')
     : (q.terms ? `
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">條款/付款方式</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(q.terms)}</div>` : '')
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.termsTitle}</div>
+      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(trFreeText(q.terms))}</div>` : '')
 
   // 收款資訊：與條款/付款方式並排兩欄顯示（節省版面高度，讓 SUMMARY 頁含簽署確認欄能收在同一頁）
   const bankInfoInnerHtml = `
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">收款資訊</div>
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.bankInfoTitle}</div>
       <div style="font-size:11px;color:#4b5563;line-height:1.5;">
-        <div>Bank: ${esc(COMPANY_INFO.bank.name)}</div>
-        <div>Account No.: ${esc(COMPANY_INFO.bank.accountNo)}</div>
-        <div>Name: ${esc(COMPANY_INFO.bank.accountName)}</div>
-        <div>轉數快(FPS) 電話號碼: ${esc(COMPANY_INFO.bank.fpsPhone)}</div>
+        <div>${L.bankLabel}${esc(bankName)}</div>
+        <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank.accountNo)}</div>
+        <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank.accountName)}</div>
+        <div>${L.fpsLabel}${esc(COMPANY_INFO.bank.fpsPhone)}</div>
       </div>`
 
   const bankTermsBlock = `
@@ -803,31 +872,31 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 報價單：備註 Remarks（客戶條款聲明，如材料範圍/不包含項目/變更需簽署確認等），發票不顯示
   const remarksBlock = (!isInvoice && q.remarks) ? `
     <div class="pdf-row" style="margin-top:12px;">
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:3px;">Remarks 備註</div>
-      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.45;">${esc(q.remarks)}</div>
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:3px;">${L.remarksTitle}</div>
+      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.45;">${esc(trFreeText(q.remarks))}</div>
     </div>` : ''
 
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   // 簽名留白高度已縮減，確保整個 SUMMARY 頁（含此簽署欄）能收在同一頁，不再溢出到下一頁
   const signatureBlock = `
     <div class="pdf-row" style="margin-top:14px;">
-      <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">Signed &amp; Confirmation 簽署確認 :</div>
+      <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
         <div>
-          <div>For on behalf of 代表本公司</div>
+          <div>${L.signOnBehalf}</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
           <div style="height:32px;"></div>
           <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
-            <div>Signed By 簽署人 :</div>
-            <div>Date 簽署確實日期 :</div>
+            <div>${L.signBy}</div>
+            <div>${L.signDate}</div>
           </div>
         </div>
         <div>
-          <div>Accepted &amp; Confirmed By 客戶確認接受</div>
+          <div>${L.signAccepted}</div>
           <div style="height:54px;"></div>
           <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
-            <div>Signed By 簽署人 :</div>
-            <div>Date 簽署確實日期 :</div>
+            <div>${L.signBy}</div>
+            <div>${L.signDate}</div>
           </div>
         </div>
       </div>
@@ -839,16 +908,14 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="display:flex;align-items:center;gap:10px;">
         <img src="/static/images/logo.png" style="width:44px;height:44px;object-fit:contain;" crossorigin="anonymous" />
         <div>
-          <div style="font-size:24px;font-weight:700;">${esc(COMPANY_INFO.nameEn)}</div>
-          <div style="font-size:13px;color:#6b7280;margin-top:1px;">${esc(COMPANY_INFO.nameZh)}</div>
+          <div style="font-size:24px;font-weight:700;">${esc(companyName)}</div>
         </div>
       </div>
       <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">${docLabel}</div>
     </div>
 
     <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.4;">
-      <div>${esc(COMPANY_INFO.addressZh)}</div>
-      <div>${esc(COMPANY_INFO.addressEn)}</div>
+      <div>${esc(companyAddress)}</div>
       <div>Tel: ${esc(COMPANY_INFO.phone)} ｜ ${esc(COMPANY_INFO.email)} ｜ ${esc(COMPANY_INFO.website)}</div>
     </div>
 
@@ -858,10 +925,10 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div><span style="font-weight:700;">${docNoLabel}</span>${esc(docNo)}</div>
       <div><span style="font-weight:700;">${issueDateLabel}</span>${issueDate}</div>
       ${isInvoice
-        ? `<div><span style="font-weight:700;">對應報價單號：</span>${esc(q.quote_no)}</div>`
-        : `<div><span style="font-weight:700;">有效期限：</span>${Fmt.date(q.valid_until)}</div>`}
-      <div><span style="font-weight:700;">客戶：</span>${esc(q.company_name)}</div>
-      ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">工程地址：</span>${esc(siteAddress)}</div>` : ''}
+        ? `<div><span style="font-weight:700;">${L.relatedQuoteNo}</span>${esc(q.quote_no)}</div>`
+        : `<div><span style="font-weight:700;">${L.validUntil}</span>${Fmt.date(q.valid_until)}</div>`}
+      <div><span style="font-weight:700;">${L.customer}</span>${esc(q.company_name)}</div>
+      ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">${L.siteAddress}</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
     <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:10px;padding-bottom:6px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
@@ -872,13 +939,13 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:7px 6px;text-align:left;font-weight:600;">Description 說明</th>
-          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">Amount (${q.currency || 'HKD'})</th>
+          <th style="padding:7px 6px;text-align:left;font-weight:600;">${L.descCol}</th>
+          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">${L.amountCol} (${q.currency || 'HKD'})</th>
         </tr>
       </thead>
       <tbody>
         <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
-          <td style="padding:8px 6px;color:#1f2937;">${invoiceData.remark ? esc(invoiceData.remark) : `本次應付款項（對應報價單 ${esc(q.quote_no)}）`}</td>
+          <td style="padding:8px 6px;color:#1f2937;">${invoiceData.remark ? esc(trFreeText(invoiceData.remark)) : esc(L.amountDue(q.quote_no))}</td>
           <td style="padding:8px 6px;text-align:right;color:#1f2937;">${displayAmount.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         </tr>
       </tbody>
@@ -886,9 +953,9 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:7px 6px;text-align:left;font-weight:600;width:40px;">Item</th>
-          <th style="padding:7px 6px;text-align:left;font-weight:600;">Description 工程分類</th>
-          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">Amount (${q.currency || 'HKD'})</th>
+          <th style="padding:7px 6px;text-align:left;font-weight:600;width:40px;">${L.itemCol}</th>
+          <th style="padding:7px 6px;text-align:left;font-weight:600;">${L.descCol}</th>
+          <th style="padding:7px 6px;text-align:right;font-weight:600;width:110px;">${L.amountCol} (${q.currency || 'HKD'})</th>
         </tr>
       </thead>
       <tbody>${summaryRows}</tbody>
@@ -900,30 +967,30 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     ? Math.round((displayAmount / Number(q.total_amount)) * 1000) / 10
     : null
   const invoiceInstallmentLabel = isInvoice
-    ? `第 ${invoiceData.seq || 1} 期${invoiceData.installment_total ? ` ／ 共 ${invoiceData.installment_total} 期` : ''}`
+    ? L.installmentText(invoiceData.seq || 1, invoiceData.installment_total)
     : ''
 
   const summaryTotalsHtml = isInvoice ? `
     <div class="pdf-row" style="margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:10px 12px;">
       <table style="width:100%;border-collapse:collapse;font-size:11px;color:#4b5563;">
         <tr>
-          <td style="padding:3px 0;white-space:nowrap;">工程總額 Contract Total</td>
+          <td style="padding:3px 0;white-space:nowrap;">${L.contractTotal}</td>
           <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${Fmt.currency(q.total_amount, q.currency, 2)}</td>
         </tr>
         <tr>
-          <td style="padding:3px 0;white-space:nowrap;">收款期數 Installment</td>
+          <td style="padding:3px 0;white-space:nowrap;">${L.installmentLabel}</td>
           <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${esc(invoiceInstallmentLabel)}</td>
         </tr>
         ${invoicePercent !== null ? `
         <tr>
-          <td style="padding:3px 0;white-space:nowrap;">本期應收比例 % of Total</td>
+          <td style="padding:3px 0;white-space:nowrap;">${L.percentOfTotal}</td>
           <td style="padding:3px 0;text-align:right;white-space:nowrap;font-weight:600;color:#1f2937;">${invoicePercent}%</td>
         </tr>` : ''}
         <tr>
           <td colspan="2" style="border-top:1px solid #d1d5db;padding-top:6px;"></td>
         </tr>
         <tr>
-          <td style="padding:2px 0;font-weight:700;font-size:13px;color:#1f2937;white-space:nowrap;">Total Due 本次應付${invoicePercent !== null ? `（總額 × ${invoicePercent}%）` : ''}</td>
+          <td style="padding:2px 0;font-weight:700;font-size:13px;color:#1f2937;white-space:nowrap;">${invoicePercent !== null ? L.totalDueWithPct(invoicePercent) : L.totalDue}</td>
           <td style="padding:2px 0;text-align:right;font-weight:700;font-size:14px;color:#1f2937;white-space:nowrap;">${Fmt.currency(displayAmount, q.currency, 2)}</td>
         </tr>
       </table>
@@ -931,25 +998,29 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     <div class="pdf-row" style="display:flex;justify-content:flex-end;margin-top:6px;">
       <div style="width:260px;font-size:12px;">
         <div style="display:flex;justify-content:space-between;font-weight:700;color:#1f2937;padding:5px 0;border-top:1px solid #e5e7eb;">
-          <span>Grand Total 總計</span><span>${Fmt.currency(q.subtotal, q.currency, 2)}</span>
+          <span>${L.grandTotal}</span><span>${Fmt.currency(q.subtotal, q.currency, 2)}</span>
         </div>
         ${discountRow}
         ${taxRow}
         <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;">
-          <span>Total 合計</span><span>${Fmt.currency(q.total_amount, q.currency, 2)}</span>
+          <span>${L.total}</span><span>${Fmt.currency(q.total_amount, q.currency, 2)}</span>
         </div>
       </div>
     </div>`
 
+  const amountInWordsText = lang === 'en'
+    ? Fmt.amountInWords(displayAmount, q.currency)
+    : Fmt.amountInWordsZh(displayAmount, q.currency)
+
   const summaryPageHtml = `
-    ${headerBlockHtml('SUMMARY 滙總')}
+    ${headerBlockHtml(L.summaryTitle)}
 
     ${summaryTableHtml}
 
     ${summaryTotalsHtml}
 
     <div class="pdf-row" style="margin-top:10px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:6px;">
-      ${esc(Fmt.amountInWords(displayAmount, q.currency))}
+      ${esc(amountInWordsText)}
     </div>
 
     ${bankTermsBlock}
@@ -959,25 +1030,25 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     ${signatureBlock}
 
     <div class="pdf-row" style="margin-top:14px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
-      ${esc(footerNote)} ｜ ${esc(COMPANY_INFO.nameZh)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
+      ${esc(footerNote)} ｜ ${esc(companyName)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
     </div>`
 
   // ---- Breakdown 頁：各分類細分項目（強制另起新頁，class="pdf-page-break" 供分頁邏輯辨識） ----
   // 發票不需要 Breakdown 細分頁，僅報價單顯示
   const breakdownPageHtml = isInvoice ? '' : `
     <div class="pdf-page-break" style="margin-top:24px;">
-    ${headerBlockHtml('BREAKDOWN 細分報價')}
+    ${headerBlockHtml(L.breakdownTitle)}
 
     <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
         <tr style="background:${tableHeadColor};color:#fff;">
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:22px;">No.</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:70px;">位置</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;">說明</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">數量</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">單位</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:60px;">單價</th>
-          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:72px;">小計</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:22px;">${L.noCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:70px;">${L.locationCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;">${L.descCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">${L.qtyCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:40px;">${L.unitCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:60px;">${L.priceCol}</th>
+          <th style="padding:0px 4px 10px 4px;line-height:1;text-align:center;font-weight:600;width:72px;">${L.subtotalCol}</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
@@ -985,7 +1056,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     </div>`
 
   return `
-  <div style="width:100%;color:#1f2937;background:#fff;box-sizing:border-box;">
+  <div style="width:100%;color:#1f2937;background:#fff;box-sizing:border-box;" lang="${lang === 'en' ? 'en' : 'zh-Hant'}">
     ${summaryPageHtml}
     ${breakdownPageHtml}
   </div>`
@@ -1039,8 +1110,9 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
     // 另存為 PDF 時會以視窗標題作為預設檔名
     const docTitle = String(fileName || '').replace(/\.pdf$/i, '')
 
+    const printLang = (typeof I18n !== 'undefined' && I18n.getLang() === 'en') ? 'en' : 'zh-Hant'
     const printDocHtml = `<!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="${printLang}">
 <head>
 <meta charset="UTF-8">
 <title>${Fmt.escapeHtml(docTitle)}</title>
