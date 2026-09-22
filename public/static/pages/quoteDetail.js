@@ -863,10 +863,12 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
         <div>${L.fpsLabel}${esc(COMPANY_INFO.bank.fpsPhone)}</div>
       </div>`
 
+  // 收款資訊與條款/付款方式改為上下堆疊顯示（收款資訊在上，條款在下），
+  // 不再左右並排——並排時條款內容較長會被壓縮成兩欄過窄，不易閱讀
   const bankTermsBlock = `
-    <div class="pdf-row" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+    <div class="pdf-row" style="margin-top:14px;">
       <div>${bankInfoInnerHtml}</div>
-      <div>${termsInnerHtml}</div>
+      ${termsInnerHtml ? `<div style="margin-top:12px;">${termsInnerHtml}</div>` : ''}
     </div>`
 
   // 報價單：備註 Remarks（客戶條款聲明，如材料範圍/不包含項目/變更需簽署確認等），發票不顯示
