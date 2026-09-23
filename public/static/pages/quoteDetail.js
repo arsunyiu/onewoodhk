@@ -889,20 +889,18 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     <div class="pdf-row" style="margin-top:14px;">
       <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
-        <div>
+        <div style="display:flex;flex-direction:column;height:78px;">
           <div>${L.signOnBehalf}</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
-          <div style="height:32px;"></div>
-          <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+          <div style="margin-top:auto;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
             <div>${L.signBy}</div>
             <div>${L.signDate}</div>
           </div>
         </div>
-        <div>
+        <div style="display:flex;flex-direction:column;height:78px;">
           <div>${L.signAccepted}</div>
           <div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.4;">${esc(L.signAcceptedStatement)}</div>
-          <div style="height:34px;"></div>
-          <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+          <div style="margin-top:auto;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
             <div>${L.signBy}</div>
             <div>${L.signDate}</div>
           </div>
