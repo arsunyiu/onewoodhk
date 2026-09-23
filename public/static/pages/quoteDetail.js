@@ -721,6 +721,7 @@ const PDF_LABELS = {
     bankLabel: '銀行：', accountNoLabel: '帳號：', accountNameLabel: '戶名：', fpsLabel: '轉數快(FPS) 電話號碼：',
     remarksTitle: '備註',
     signTitle: '簽署確認：', signOnBehalf: '代表本公司', signAccepted: '客戶確認接受',
+    signAcceptedStatement: '本人/吾等茲確認接受此報價單，並授權按上述條款進行相關工程。',
     signBy: '簽署人：', signDate: '簽署確實日期：',
     contractTotal: '工程總額', installmentLabel: '收款期數', percentOfTotal: '本期應收比例',
     totalDue: '本次應付', totalDueWithPct: (pct) => `本次應付（總額 × ${pct}%）`,
@@ -744,6 +745,7 @@ const PDF_LABELS = {
     bankLabel: 'Bank: ', accountNoLabel: 'Account No.: ', accountNameLabel: 'Name: ', fpsLabel: 'FPS Phone No.: ',
     remarksTitle: 'Remarks',
     signTitle: 'Signed & Confirmation:', signOnBehalf: 'For and on behalf of', signAccepted: 'Accepted & Confirmed By',
+    signAcceptedStatement: 'I/We hereby accept this quotation and authorize the works to proceed under the listed terms.',
     signBy: 'Signed By: ', signDate: 'Date: ',
     contractTotal: 'Contract Total', installmentLabel: 'Installment', percentOfTotal: '% of Total',
     totalDue: 'Total Due', totalDueWithPct: (pct) => `Total Due (Total × ${pct}%)`,
@@ -774,6 +776,9 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
   const siteAddress = tr(q.site_address || q.customer_address || '')
   const docLabel = isInvoice ? L.docLabelInvoice : L.docLabelQuote
+  // Section 標題（SUMMARY/BREAKDOWN）前綴文件類型名稱：英文加空格分隔（如 "QUOTATION SUMMARY"），
+  // 中文直接相連不加空格（如「報價單滙總」），符合中文排版習慣
+  const sectionLabel = (title) => lang === 'en' ? `${docLabel} ${title}` : `${docLabel}${title}`
   const docNo = isInvoice ? invoiceData.invoice_no : q.quote_no
   const docNoLabel = isInvoice ? L.docNoLabelInvoice : L.docNoLabelQuote
   const issueDate = isInvoice ? Fmt.date(invoiceData.issue_date) : Fmt.date(q.created_at)
@@ -895,7 +900,8 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
         </div>
         <div>
           <div>${L.signAccepted}</div>
-          <div style="height:54px;"></div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.4;">${esc(L.signAcceptedStatement)}</div>
+          <div style="height:34px;"></div>
           <div style="border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
             <div>${L.signBy}</div>
             <div>${L.signDate}</div>
@@ -1015,7 +1021,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
     : Fmt.amountInWordsZh(displayAmount, q.currency)
 
   const summaryPageHtml = `
-    ${headerBlockHtml(L.summaryTitle)}
+    ${headerBlockHtml(sectionLabel(L.summaryTitle))}
 
     ${summaryTableHtml}
 
@@ -1039,7 +1045,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 發票不需要 Breakdown 細分頁，僅報價單顯示
   const breakdownPageHtml = isInvoice ? '' : `
     <div class="pdf-page-break" style="margin-top:24px;">
-    ${headerBlockHtml(L.breakdownTitle)}
+    ${headerBlockHtml(sectionLabel(L.breakdownTitle))}
 
     <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:11px;">
       <thead>
