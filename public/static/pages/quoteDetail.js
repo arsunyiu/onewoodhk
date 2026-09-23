@@ -888,22 +888,24 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   const signatureBlock = `
     <div class="pdf-row" style="margin-top:14px;">
       <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
-        <div style="display:flex;flex-direction:column;height:78px;">
+      <!-- 用CSS grid明確分3列（說明文字/簽名留白/簽名線），同一列高度左右共用，
+           確保無論說明文字長短不一，中間簽名留白與底部簽名線都能左右對齊同一水平 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 44px auto;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
+        <div style="grid-column:1;grid-row:1;">
           <div>${L.signOnBehalf}</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
-          <div style="margin-top:auto;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
-            <div>${L.signBy}</div>
-            <div>${L.signDate}</div>
-          </div>
         </div>
-        <div style="display:flex;flex-direction:column;height:78px;">
+        <div style="grid-column:2;grid-row:1;">
           <div>${L.signAccepted}</div>
           <div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.4;">${esc(L.signAcceptedStatement)}</div>
-          <div style="margin-top:auto;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
-            <div>${L.signBy}</div>
-            <div>${L.signDate}</div>
-          </div>
+        </div>
+        <div style="grid-column:1;grid-row:3;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+          <div>${L.signBy}</div>
+          <div>${L.signDate}</div>
+        </div>
+        <div style="grid-column:2;grid-row:3;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+          <div>${L.signBy}</div>
+          <div>${L.signDate}</div>
         </div>
       </div>
     </div>`
