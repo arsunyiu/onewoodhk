@@ -144,8 +144,8 @@ quotes.post('/', async (c) => {
   const result = await c.env.DB.prepare(
     `INSERT INTO quotes
       (quote_no, customer_id, contact_id, owner_id, status, title, currency, subtotal,
-       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes, remarks, site_address)
-     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       discount_type, discount_value, tax_rate, tax_amount, total_amount, valid_until, terms, notes, remarks, site_address, contact_phone)
+     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       quoteNo,
@@ -164,7 +164,8 @@ quotes.post('/', async (c) => {
       body.terms || null,
       body.notes || null,
       body.remarks !== undefined ? (body.remarks || null) : DEFAULT_QUOTE_REMARKS,
-      body.site_address || null
+      body.site_address || null,
+      body.contact_phone || null
     )
     .run()
 
@@ -287,7 +288,7 @@ quotes.put('/:id', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE quotes SET title=?, contact_id=?, owner_id=?, currency=?, subtotal=?, discount_type=?, discount_value=?,
-       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, remarks=?, site_address=?,
+       tax_rate=?, tax_amount=?, total_amount=?, valid_until=?, terms=?, notes=?, remarks=?, site_address=?, contact_phone=?,
        status = CASE WHEN status='rejected' THEN 'draft' ELSE status END,
        updated_at=CURRENT_TIMESTAMP
      WHERE id=?`
@@ -308,6 +309,7 @@ quotes.put('/:id', async (c) => {
       body.notes ?? existing.notes,
       body.remarks ?? existing.remarks,
       body.site_address ?? existing.site_address,
+      body.contact_phone ?? existing.contact_phone,
       id
     )
     .run()

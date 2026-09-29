@@ -141,6 +141,11 @@ function renderQuoteForm(existing) {
             </select>
           </div>
           <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">聯絡人電話 <span class="text-gray-400">(選擇聯絡人後自動帶入，可自行編輯)</span></label>
+            <input id="qf-contact-phone" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.contact_phone || '')}" placeholder="例：9123 4567"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50" />
+          </div>
+          <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">報價案標題</label>
             <input id="qf-title" ${disabled ? 'disabled' : ''} type="text" value="${Fmt.escapeHtml(q.title || '')}" placeholder="例：辦公室裝修工程報價"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none disabled:bg-gray-50" />
@@ -338,13 +343,18 @@ function bindQuoteFormEvents() {
     customerSel.addEventListener('change', async (e) => {
       const custId = e.target.value
       const contactSel = document.getElementById('qf-contact')
+      const phoneInput = document.getElementById('qf-contact-phone')
       contactSel.innerHTML = '<option value="">不指定</option>'
       QuoteFormState.contacts = []
+      if (phoneInput) phoneInput.value = ''
       if (!custId) return
       try {
         const res = await API.get(`/customers/${custId}/contacts`)
         QuoteFormState.contacts = res.data
-        populateContactOptions()
+        // 切換客戶時，自動選取該客戶的「主要聯絡人」（若有設定），並自動帶入其電話（可自行編輯覆寫）
+        const primary = QuoteFormState.contacts.find((c) => c.is_primary) || QuoteFormState.contacts[0]
+        populateContactOptions(primary ? primary.id : null)
+        if (phoneInput && primary) phoneInput.value = primary.phone || primary.mobile || ''
       } catch (err) {
         showToast(err.message, 'error')
       }
@@ -453,6 +463,15 @@ function populateContactOptions(selectedId) {
     QuoteFormState.contacts
       .map((c) => `<option value="${c.id}" ${Number(selectedId) === c.id ? 'selected' : ''}>${Fmt.escapeHtml(c.name)}${c.is_primary ? '（主要）' : ''}</option>`)
       .join('')
+  // 使用者手動改選聯絡人時，同步自動帶入該聯絡人的電話（可自行編輯覆寫，非強制鎖定）；
+  // 綁定於此處（每次重新產生選單後）而非 bindQuoteFormEvents，避免因 innerHTML 重寫而失去監聽
+  sel.onchange = (e) => {
+    const phoneInput = document.getElementById('qf-contact-phone')
+    if (!phoneInput) return
+    const cid = e.target.value ? Number(e.target.value) : null
+    const contact = cid ? QuoteFormState.contacts.find((c) => c.id === cid) : null
+    phoneInput.value = contact ? (contact.phone || contact.mobile || '') : ''
+  }
 }
 
 function recalcQuoteTotals() {
@@ -515,6 +534,7 @@ async function submitQuoteForm(submitAfter) {
   const payload = {
     customer_id: Number(customerId),
     contact_id: document.getElementById('qf-contact').value ? Number(document.getElementById('qf-contact').value) : null,
+    contact_phone: document.getElementById('qf-contact-phone').value.trim() || null,
     title: document.getElementById('qf-title').value.trim() || null,
     site_address: document.getElementById('qf-site-address').value.trim() || null,
     currency: document.getElementById('qf-currency').value,

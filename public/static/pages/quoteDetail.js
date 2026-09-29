@@ -103,7 +103,8 @@ function renderQuoteDetail(q) {
               </div>
               <div>
                 <p class="text-gray-400 text-xs">聯絡人</p>
-                <p class="text-gray-700">${q.contact ? Fmt.escapeHtml(q.contact.name) + (q.contact.phone ? ' · ' + Fmt.escapeHtml(q.contact.phone) : '') : '未指定'}</p>
+                <p class="text-gray-700">${q.contact ? Fmt.escapeHtml(q.contact.name) : '未指定'}</p>
+                ${(q.contact_phone || (q.contact && q.contact.phone)) ? `<p class="text-gray-700">${Fmt.escapeHtml(q.contact_phone || q.contact.phone)}</p>` : ''}
               </div>
               <div class="col-span-2">
                 <p class="text-gray-400 text-xs">工程地址</p>
@@ -711,7 +712,7 @@ const PDF_LABELS = {
     docNoLabelQuote: '報價單號：', docNoLabelInvoice: '發票編號：',
     issueDateLabelQuote: '日期：', issueDateLabelInvoice: '發票日期：',
     relatedQuoteNo: '對應報價單號：', validUntil: '有效期限：',
-    customer: '客戶：', siteAddress: '工程地址：',
+    customer: '客戶：', siteAddress: '工程地址：', contactPhone: '聯絡電話：',
     summaryTitle: '滙總', breakdownTitle: '細分報價',
     itemCol: '項目', descCol: '說明', amountCol: '金額', noCol: '編號',
     locationCol: '位置', qtyCol: '數量', unitCol: '單位', priceCol: '單價', subtotalCol: '小計',
@@ -735,7 +736,7 @@ const PDF_LABELS = {
     docNoLabelQuote: 'Quotation No.: ', docNoLabelInvoice: 'Invoice No.: ',
     issueDateLabelQuote: 'Date: ', issueDateLabelInvoice: 'Invoice Date: ',
     relatedQuoteNo: 'Related Quotation No.: ', validUntil: 'Valid Until: ',
-    customer: 'Customer: ', siteAddress: 'Site Address: ',
+    customer: 'Customer: ', siteAddress: 'Site Address: ', contactPhone: 'Contact Phone: ',
     summaryTitle: 'SUMMARY', breakdownTitle: 'BREAKDOWN',
     itemCol: 'Item', descCol: 'Description', amountCol: 'Amount', noCol: 'No.',
     locationCol: 'Location', qtyCol: 'Qty', unitCol: 'Unit', priceCol: 'Unit Price', subtotalCol: 'Sub-total',
@@ -936,6 +937,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
         ? `<div><span style="font-weight:700;">${L.relatedQuoteNo}</span>${esc(q.quote_no)}</div>`
         : `<div><span style="font-weight:700;">${L.validUntil}</span>${Fmt.date(q.valid_until)}</div>`}
       <div><span style="font-weight:700;">${L.customer}</span>${esc(q.company_name)}</div>
+      ${q.contact_phone ? `<div><span style="font-weight:700;">${L.contactPhone}</span>${esc(q.contact_phone)}</div>` : ''}
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">${L.siteAddress}</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
