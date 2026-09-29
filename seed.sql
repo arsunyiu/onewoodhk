@@ -1,24 +1,25 @@
 -- ============================================================
 -- 一木工程  |  Seed Data (測試資料)
 -- 業務情境：裝修/水電維修工程承包商（香港）
--- 預設密碼皆為: OneWood2026#
+-- 登入方式：ID 登入（以 Email 前綴，即 @ 之前的部分，作為登入帳號；完整 Email 亦可登入）
+-- 預設密碼皆為: One2026#
 -- password_hash 使用 PBKDF2(SHA-256, 100000 rounds) 格式: salt:hash (hex)
--- 以下 hash 由 src/utils/crypto.ts 的 hashPassword('OneWood2026#') 產生
+-- 以下 hash 由 src/utils/crypto.ts 的 hashPassword('One2026#') 產生
 -- ============================================================
 
 -- Users -------------------------------------------------------
--- 1: admin@onewood.com.hk  (Admin)
--- 2: manager@onewood.com.hk (Manager，帶團隊)
--- 3: kenny@onewood.com.hk  (Sales, manager_id=2) - Kenny Yip
--- 4: wah@onewood.com.hk    (Sales, manager_id=2) - Wah Tong
--- 5: joy@onewood.com.hk    (Sales, manager_id=2) - Joy Ng
+-- 1: admin   (admin@onewood.com.hk)  (Admin)
+-- 2: manager (manager@onewood.com.hk) (Manager，帶團隊)
+-- 3: kenny   (kenny@onewood.com.hk)  (Sales, manager_id=2) - Kenny Yip
+-- 4: wah     (wah@onewood.com.hk)    (Sales, manager_id=2) - Wah Tong
+-- 5: joy     (joy@onewood.com.hk)    (Sales, manager_id=2) - Joy Ng
 -- 電話統一改為香港格式（8位數字，市話 2/3 開頭、手機 5/6/9 開頭）
 INSERT OR IGNORE INTO users (id, name, email, password_hash, role, manager_id, phone, is_active) VALUES
-  (1, '系統管理員', 'admin@onewood.com.hk',   '165e312dc0fa979669a560c439a826e2:4145a21fcc4affe50ed65030a897c328dc88cd2f38c651932477e6cc2a102585', 'admin',   NULL, '3123 4560', 1),
-  (2, '陳經理',     'manager@onewood.com.hk', '165e312dc0fa979669a560c439a826e2:4145a21fcc4affe50ed65030a897c328dc88cd2f38c651932477e6cc2a102585', 'manager', NULL, '6466 6293', 1),
-  (3, 'Kenny Yip',  'kenny@onewood.com.hk',   '165e312dc0fa979669a560c439a826e2:4145a21fcc4affe50ed65030a897c328dc88cd2f38c651932477e6cc2a102585', 'sales',   2,    '9123 4561', 1),
-  (4, 'Wah Tong',   'wah@onewood.com.hk',     '165e312dc0fa979669a560c439a826e2:4145a21fcc4affe50ed65030a897c328dc88cd2f38c651932477e6cc2a102585', 'sales',   2,    '9123 4562', 1),
-  (5, 'Joy Ng',     'joy@onewood.com.hk',     '165e312dc0fa979669a560c439a826e2:4145a21fcc4affe50ed65030a897c328dc88cd2f38c651932477e6cc2a102585', 'sales',   2,    '9123 4563', 1);
+  (1, '系統管理員', 'admin@onewood.com.hk',   'fe5ac78400d46b03b6aa23106d91d79e:a0103b9b41086302c72cd346ef9d92dffabe52ce0de05c0d928f011dd3014ed4', 'admin',   NULL, '3123 4560', 1),
+  (2, '陳經理',     'manager@onewood.com.hk', 'da68045d79a50d4b93e1526647cb35d1:7b80b7ad120b77efe1e1101ae8c71580ab85007c4ba224dbe35327546a0d99ae', 'manager', NULL, '6466 6293', 1),
+  (3, 'Kenny Yip',  'kenny@onewood.com.hk',   '107759e51720d6b80567aac6b786ca35:a0ea5f52678a00332f7a26aa2dd9d94e229436bc78b92f01f0a2fa1ebf1722d0', 'sales',   2,    '9123 4561', 1),
+  (4, 'Wah Tong',   'wah@onewood.com.hk',     '35f567c6bcb86b0bada6cc3b54478bbb:34760d53df015ff67f962f5a0307a69db327533a8fda25e29ab0e5f42ae2dfc6', 'sales',   2,    '9123 4562', 1),
+  (5, 'Joy Ng',     'joy@onewood.com.hk',     'e15dd1a2eac465e23bbf3721470ce6b9:a36644474b7e4524c570a56c7f38509bbb5dabe8338f01bd4e2bc38c0c7cb8bd', 'sales',   2,    '9123 4563', 1);
 
 -- Customers -----------------------------------------------------
 -- 裝修/水電工程業務常見客戶類型：私人業主、業主立案法團、工廈/物業管理公司、地產發展商

@@ -163,14 +163,15 @@
 11. ~~供應商與工程管理串接(指派判頭/工人至工程、反向查詢供應商參與工程)~~ ✅ 已完成
 12. Email 通知 / 財務會計報表PDF匯出 / 指派完成後自動提示補登評分
 
-## 測試帳號 (本地開發，密碼皆為 `OneWood2026#`)
-| Email | 角色 | 說明 |
-|---|---|---|
-| admin@onewood.com.hk | admin | 系統管理員，可見全部資料 |
-| manager@onewood.com.hk | manager | 陳經理，可見自己+團隊(Kenny Yip, Wah Tong, Joy Ng)資料 |
-| kenny@onewood.com.hk | sales | Kenny Yip，僅可見自己客戶/報價 |
-| wah@onewood.com.hk | sales | Wah Tong，僅可見自己客戶/報價 |
-| joy@onewood.com.hk | sales | Joy Ng，僅可見自己客戶/報價 |
+## 測試帳號 (本地開發，密碼皆為 `One2026#`)
+**登入方式**：ID 登入 — 帳號欄位輸入 Email 的前綴（@ 之前的部分即可），完整 Email 亦可登入。
+| 登入 ID | 完整 Email | 角色 | 說明 |
+|---|---|---|---|
+| admin | admin@onewood.com.hk | admin | 系統管理員，可見全部資料 |
+| manager | manager@onewood.com.hk | manager | 陳經理，可見自己+團隊(Kenny Yip, Wah Tong, Joy Ng)資料 |
+| kenny | kenny@onewood.com.hk | sales | Kenny Yip，僅可見自己客戶/報價 |
+| wah | wah@onewood.com.hk | sales | Wah Tong，僅可見自己客戶/報價 |
+| joy | joy@onewood.com.hk | sales | Joy Ng，僅可見自己客戶/報價 |
 
 ## 資料架構
 - **儲存服務**：Cloudflare D1 (SQLite)，本地開發使用 `--local` 模式獨立 SQLite
@@ -326,7 +327,7 @@ bash scripts/setup_hosted_secrets.sh
 ```
 
 **Step 3（人工驗證，兩個腳本執行完畢後務必手動確認）：**
-1. 用 `seed.sql` 內任一測試帳號（見上方「測試帳號」章節，密碼皆為 `OneWood2026#`）在正式網址登入
+1. 用 `seed.sql` 內任一測試帳號（見上方「測試帳號」章節，以 ID 登入，密碼皆為 `One2026#`）在正式網址登入
 2. 確認 `/api/auth/me`、`/api/dashboard/summary`、`/api/reports/summary?range=90d` 皆回應 200 且資料正常
 
 **腳本說明：**

@@ -21,12 +21,12 @@ Pages.login = function () {
         <h2 class="text-lg font-semibold text-ink-50 mb-6">登入您的帳號</h2>
         <form id="login-form" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-ink-400 mb-1">Email</label>
+            <label class="block text-sm font-medium text-ink-400 mb-1">帳號 ID</label>
             <div class="relative">
-              <i class="fas fa-envelope absolute left-3 top-3.5 text-ink-400 text-sm"></i>
-              <input type="email" id="login-email" required autocomplete="email"
+              <i class="fas fa-user absolute left-3 top-3.5 text-ink-400 text-sm"></i>
+              <input type="text" id="login-email" required autocomplete="username"
                 class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
-                placeholder="you@company.com" value="manager@onewood.com.hk" />
+                placeholder="例如：admin" value="manager" />
             </div>
           </div>
           <div>
@@ -35,7 +35,7 @@ Pages.login = function () {
               <i class="fas fa-lock absolute left-3 top-3.5 text-ink-400 text-sm"></i>
               <input type="password" id="login-password" required autocomplete="current-password"
                 class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
-                placeholder="輸入密碼" value="OneWood2026#" />
+                placeholder="輸入密碼" value="One2026#" />
             </div>
           </div>
           <div id="login-error" class="hidden text-sm text-bad-400 bg-bad-50 rounded-lg px-3 py-2"></div>
@@ -48,16 +48,16 @@ Pages.login = function () {
 
         <div class="mt-6 pt-5 border-t border-line">
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <button data-quick="manager@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+            <button data-quick="manager" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
               <i class="fas fa-user-tie text-ink-400 mr-1"></i> 主管
             </button>
-            <button data-quick="kenny@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+            <button data-quick="kenny" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
               <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Kenny Yip
             </button>
-            <button data-quick="wah@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+            <button data-quick="wah" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
               <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Wah Tong
             </button>
-            <button data-quick="joy@onewood.com.hk" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
+            <button data-quick="joy" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
               <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Joy Ng
             </button>
           </div>
@@ -70,7 +70,7 @@ Pages.login = function () {
   document.querySelectorAll('.quick-login').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.getElementById('login-email').value = btn.dataset.quick
-      document.getElementById('login-password').value = 'OneWood2026#'
+      document.getElementById('login-password').value = 'One2026#'
     })
   })
 

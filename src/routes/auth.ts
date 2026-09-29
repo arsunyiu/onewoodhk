@@ -9,24 +9,27 @@ import { logAudit } from '../utils/audit'
 const auth = new Hono<{ Bindings: Bindings }>()
 
 // POST /api/auth/login
+// 登入帳號採「ID 登入」：以 Email 的前綴（@ 之前的部分，例如 admin@onewood.com.hk 的 admin）作為登入 ID，
+// 亦相容直接輸入完整 Email（兩者皆可比對成功），不區分大小寫。
 auth.post('/login', async (c) => {
   const body = await c.req.json().catch(() => null)
   if (!body?.email || !body?.password) {
     return fail(c, '請輸入帳號與密碼', 400)
   }
   const { email, password } = body
-  const normalizedEmail = String(email).toLowerCase().trim()
+  const loginId = String(email).toLowerCase().trim()
 
   const user = await c.env.DB.prepare(
-    'SELECT id, name, email, password_hash, role, manager_id, is_active FROM users WHERE email = ?'
+    `SELECT id, name, email, password_hash, role, manager_id, is_active FROM users
+     WHERE lower(email) = ? OR lower(substr(email, 1, instr(email, '@') - 1)) = ?`
   )
-    .bind(normalizedEmail)
+    .bind(loginId, loginId)
     .first<any>()
 
   if (!user) {
     await logAudit(c, {
       user_id: null,
-      user_email: normalizedEmail,
+      user_email: loginId,
       action: 'login_failed',
       module: 'auth',
       description: '登入失敗：帳號不存在'
