@@ -51,15 +51,6 @@ Pages.login = function () {
             <button data-quick="manager" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
               <i class="fas fa-user-tie text-ink-400 mr-1"></i> 主管
             </button>
-            <button data-quick="kenny" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
-              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Kenny Yip
-            </button>
-            <button data-quick="wah" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
-              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Wah Tong
-            </button>
-            <button data-quick="joy" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
-              <i class="fas fa-user text-ink-400 mr-1"></i> 業務 - Joy Ng
-            </button>
           </div>
         </div>
       </div>
