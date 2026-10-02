@@ -19,6 +19,33 @@ let ARState = { tab: 'mine', page: 1, pageSize: 20, status: '' }
 let ARCategories = { income: [], expense: [] }
 let ARCache = {}
 
+// 新增申請表單暫存待上傳的附件（送出申請後才一併上傳，取得 request_id）
+let ARPendingFiles = []
+
+const AR_ATTACHMENT_ICON_MAP = {
+  pdf: 'fa-file-pdf text-red-500',
+  png: 'fa-file-image text-blue-400',
+  jpg: 'fa-file-image text-blue-400',
+  jpeg: 'fa-file-image text-blue-400',
+  doc: 'fa-file-word text-blue-600',
+  docx: 'fa-file-word text-blue-600',
+  xls: 'fa-file-excel text-green-600',
+  xlsx: 'fa-file-excel text-green-600'
+}
+const AR_ALLOWED_ATTACHMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']
+
+function arAttachmentIcon(fileName) {
+  const ext = (fileName.split('.').pop() || '').toLowerCase()
+  return AR_ATTACHMENT_ICON_MAP[ext] || 'fa-file text-gray-400'
+}
+
+function arFormatFileSize(bytes) {
+  const n = Number(bytes || 0)
+  if (n < 1024) return n + ' B'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB'
+  return (n / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
 Pages.accountingRequests = async function () {
   mountLayout('accounting-requests')
   const canApprove = Auth.isManagerUp()
@@ -164,6 +191,8 @@ function openAccountingRequestModal() {
   const categoryOptions = (type) =>
     (ARCategories[type] || []).map((cat) => `<option value="${Fmt.escapeHtml(cat)}">${Fmt.escapeHtml(cat)}</option>`).join('')
 
+  ARPendingFiles = []
+
   openModal(`
     <div class="p-5">
       <h3 class="text-base font-bold text-gray-800 mb-4">新增會計申請</h3>
@@ -195,6 +224,16 @@ function openAccountingRequestModal() {
           <label class="text-xs text-gray-500">說明</label>
           <textarea id="ar-form-desc" rows="2" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="請說明申請原因，方便審批人員審核"></textarea>
         </div>
+        <div>
+          <label class="text-xs text-gray-500">附件/截圖 <span class="text-red-500">*必填</span></label>
+          <label class="mt-1 flex items-center justify-center gap-2 w-full border border-dashed border-gray-300 rounded-lg px-3 py-3 text-sm text-gray-500 cursor-pointer hover:border-primary-400 hover:text-primary-600">
+            <i class="fas fa-paperclip"></i>
+            <span>點擊選擇憑證/收據/截圖（可多選）</span>
+            <input type="file" id="ar-form-file-input" class="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png" />
+          </label>
+          <p class="text-[11px] text-gray-400 mt-1">僅支援 Word、Excel、PDF、JPEG、PNG 檔案，單檔大小上限 20MB，須至少上傳一張憑證/截圖才可核准</p>
+          <div id="ar-form-file-list" class="mt-2 space-y-1.5"></div>
+        </div>
       </div>
       <div class="flex justify-end gap-2 mt-5">
         <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
@@ -210,6 +249,49 @@ function openAccountingRequestModal() {
   typeSel.addEventListener('change', refreshCategoryOptions)
   refreshCategoryOptions()
 
+  const renderPendingFileList = () => {
+    const el = document.getElementById('ar-form-file-list')
+    if (!el) return
+    el.innerHTML = ARPendingFiles
+      .map(
+        (f, idx) => `
+      <div class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-sm">
+        <span class="flex items-center gap-2 min-w-0 flex-1 text-gray-700">
+          <i class="fas ${arAttachmentIcon(f.name)}"></i>
+          <span class="truncate">${Fmt.escapeHtml(f.name)}</span>
+          <span class="text-xs text-gray-400 shrink-0">${arFormatFileSize(f.size)}</span>
+        </span>
+        <button type="button" data-remove-idx="${idx}" class="ar-form-file-remove text-gray-400 hover:text-red-600 shrink-0"><i class="fas fa-times"></i></button>
+      </div>`
+      )
+      .join('')
+    el.querySelectorAll('.ar-form-file-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        ARPendingFiles.splice(parseInt(btn.dataset.removeIdx), 1)
+        renderPendingFileList()
+      })
+    })
+  }
+
+  document.getElementById('ar-form-file-input').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || [])
+    const MAX_SIZE = 20 * 1024 * 1024
+    for (const f of files) {
+      const ext = (f.name.split('.').pop() || '').toLowerCase()
+      if (!AR_ALLOWED_ATTACHMENT_EXTS.includes(ext)) {
+        showToast(`「${f.name}」僅支援 Word、Excel、PDF、JPEG、PNG 檔案`, 'error')
+        continue
+      }
+      if (f.size > MAX_SIZE) {
+        showToast(`「${f.name}」檔案大小不可超過 20MB`, 'error')
+        continue
+      }
+      ARPendingFiles.push(f)
+    }
+    e.target.value = ''
+    renderPendingFileList()
+  })
+
   document.getElementById('ar-form-submit').addEventListener('click', async () => {
     const payload = {
       request_type: typeSel.value,
@@ -223,13 +305,35 @@ function openAccountingRequestModal() {
       showToast('請輸入正確的金額', 'error')
       return
     }
+    if (!ARPendingFiles.length) {
+      showToast('請至少上傳一張憑證/收據/截圖作為附件', 'error')
+      return
+    }
+    const submitBtn = document.getElementById('ar-form-submit')
+    submitBtn.disabled = true
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i>送出中...`
     try {
-      await API.post('/accounting-requests', payload)
+      const res = await API.post('/accounting-requests', payload)
+      const requestId = res.data.id
+      const token = Auth.getToken()
+      for (const file of ARPendingFiles) {
+        const form = new FormData()
+        form.append('file', file)
+        const resp = await fetch(`/api/accounting-requests/${requestId}/attachments`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: form
+        })
+        const json = await resp.json().catch(() => ({}))
+        if (!resp.ok || !json.success) throw new Error(json.error || '附件上傳失敗')
+      }
       showToast('申請已送出，等待審批')
       closeModal()
       loadAccountingRequestList()
     } catch (err) {
       showToast(err.message, 'error')
+      submitBtn.disabled = false
+      submitBtn.innerHTML = '送出申請'
     }
   })
 }
@@ -239,6 +343,7 @@ function viewAccountingRequestDetail(id) {
   if (!r) return
   const typeMeta = AR_TYPE_META[r.request_type] || { label: r.request_type, color: 'bg-gray-100 text-gray-600' }
   const statusMeta = AR_STATUS_META[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' }
+  const canUpload = r.status === 'pending_approval'
   openModal(`
     <div class="p-5">
       <h3 class="text-base font-bold text-gray-800 mb-4">申請詳情 #${r.id}</h3>
@@ -257,11 +362,147 @@ function viewAccountingRequestDetail(id) {
         ${r.description ? `<div class="pt-1"><span class="text-gray-400">說明</span><p class="text-gray-700 mt-1">${Fmt.escapeHtml(r.description)}</p></div>` : ''}
         ${r.entry_id ? `<div class="flex justify-between"><span class="text-gray-400">會計帳目編號</span><span class="text-gray-700">#${r.entry_id}</span></div>` : ''}
       </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold text-gray-700"><i class="fas fa-paperclip mr-1.5 text-gray-400"></i>附件/截圖</h4>
+          ${canUpload ? `<label class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg cursor-pointer">
+            <i class="fas fa-upload mr-1"></i>補充上傳
+            <input type="file" id="ar-detail-file-input" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png" />
+          </label>` : ''}
+        </div>
+        <div id="ar-detail-attachments-list" class="space-y-2">
+          <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>載入中...</p>
+        </div>
+      </div>
+
       <div class="flex justify-end mt-5">
         <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">關閉</button>
       </div>
     </div>
   `)
+
+  const fileInput = document.getElementById('ar-detail-file-input')
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0]
+      if (file) uploadAccountingRequestAttachment(r.id, file)
+      fileInput.value = ''
+    })
+  }
+  loadAccountingRequestAttachments(r.id)
+}
+
+async function loadAccountingRequestAttachments(requestId) {
+  const el = document.getElementById('ar-detail-attachments-list')
+  if (!el) return
+  try {
+    const res = await API.get(`/accounting-requests/${requestId}/attachments`)
+    renderAccountingRequestAttachments(requestId, res.data)
+  } catch (err) {
+    el.innerHTML = `<p class="text-xs text-red-400">${Fmt.escapeHtml(err.message)}</p>`
+  }
+}
+
+function renderAccountingRequestAttachments(requestId, attachments) {
+  const el = document.getElementById('ar-detail-attachments-list')
+  if (!el) return
+  const r = ARCache[requestId]
+  const user = Auth.getUser()
+  if (!attachments || attachments.length === 0) {
+    el.innerHTML = `<p class="text-xs text-gray-400">尚未上傳任何附件</p>`
+    return
+  }
+  el.innerHTML = attachments
+    .map((a) => {
+      const canDelete = r && r.status === 'pending_approval' && (Auth.isManagerUp() || (user && user.id === a.uploaded_by))
+      return `
+    <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100">
+      <button data-att-id="${a.id}" data-att-name="${Fmt.escapeHtml(a.file_name)}" class="ar-att-download flex items-center gap-2.5 min-w-0 flex-1 text-sm text-gray-700 hover:text-primary-600 text-left">
+        <i class="fas ${arAttachmentIcon(a.file_name)}"></i>
+        <span class="truncate">${Fmt.escapeHtml(a.file_name)}</span>
+        <span class="text-xs text-gray-400 shrink-0">${arFormatFileSize(a.file_size)}</span>
+      </button>
+      <div class="flex items-center gap-2 shrink-0 text-xs text-gray-400">
+        <span>${Fmt.escapeHtml(a.uploaded_by_name)} · ${Fmt.datetime(a.created_at)}</span>
+        ${canDelete ? `<button data-att-id="${a.id}" class="ar-att-delete text-gray-400 hover:text-red-600 px-1"><i class="fas fa-trash"></i></button>` : ''}
+      </div>
+    </div>`
+    })
+    .join('')
+
+  el.querySelectorAll('.ar-att-delete').forEach((btn) => {
+    btn.addEventListener('click', () => deleteAccountingRequestAttachment(requestId, btn.dataset.attId))
+  })
+  el.querySelectorAll('.ar-att-download').forEach((btn) => {
+    btn.addEventListener('click', () => downloadAccountingRequestAttachment(requestId, btn.dataset.attId, btn.dataset.attName))
+  })
+}
+
+async function downloadAccountingRequestAttachment(requestId, attId, fileName) {
+  try {
+    const token = Auth.getToken()
+    const resp = await fetch(`/api/accounting-requests/${requestId}/attachments/${attId}/download`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!resp.ok) throw new Error('下載失敗')
+    const blob = await resp.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName || 'attachment'
+    a.setAttribute('data-external', 'true')
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch (err) {
+    showToast(err.message || '下載失敗', 'error')
+  }
+}
+
+async function uploadAccountingRequestAttachment(requestId, file) {
+  const MAX_SIZE = 20 * 1024 * 1024
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (!AR_ALLOWED_ATTACHMENT_EXTS.includes(ext)) {
+    showToast('僅支援 Word、Excel、PDF、JPEG、PNG 檔案', 'error')
+    return
+  }
+  if (file.size > MAX_SIZE) {
+    showToast('檔案大小不可超過 20MB', 'error')
+    return
+  }
+  const el = document.getElementById('ar-detail-attachments-list')
+  const prevHtml = el ? el.innerHTML : ''
+  if (el) el.innerHTML = `<p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>上傳中...</p>`
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const token = Auth.getToken()
+    const resp = await fetch(`/api/accounting-requests/${requestId}/attachments`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form
+    })
+    const json = await resp.json().catch(() => ({}))
+    if (!resp.ok || !json.success) throw new Error(json.error || '上傳失敗')
+    showToast('附件上傳成功')
+    loadAccountingRequestAttachments(requestId)
+  } catch (err) {
+    if (el) el.innerHTML = prevHtml
+    showToast(err.message || '上傳失敗', 'error')
+  }
+}
+
+async function deleteAccountingRequestAttachment(requestId, attId) {
+  if (!confirm('確定要刪除此附件嗎？')) return
+  try {
+    await API.delete(`/accounting-requests/${requestId}/attachments/${attId}`)
+    showToast('附件已刪除')
+    loadAccountingRequestAttachments(requestId)
+  } catch (err) {
+    showToast(err.message || '刪除失敗', 'error')
+  }
 }
 
 async function cancelAccountingRequest(id) {

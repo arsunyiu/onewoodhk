@@ -76,10 +76,23 @@ accountingRequests.get('/', async (c) => {
   return ok(c, rows.results, { page, page_size: pageSize, total })
 })
 
+/** 確認使用者對此申請有存取權限（本人或 manager/admin），回傳申請資料或 null */
+async function getRequestWithAccess(db: D1Database, user: JwtPayload, requestId: string) {
+  const req = await db.prepare('SELECT * FROM accounting_requests WHERE id = ?').bind(requestId).first<any>()
+  if (!req) return null
+  const isOwner = req.requested_by === user.sub
+  const isApprover = user.role === 'admin' || user.role === 'manager'
+  if (!isOwner && !isApprover) return null
+  return req
+}
+
 // GET /api/accounting-requests/:id — 單筆申請詳情
 accountingRequests.get('/:id', async (c) => {
   const user = c.get('user') as JwtPayload
-  const id = parseInt(c.req.param('id'))
+  const id = c.req.param('id')
+  const existing = await getRequestWithAccess(c.env.DB, user, id)
+  if (!existing) return fail(c, '找不到此申請或無權限', 404)
+
   const row = await c.env.DB.prepare(
     `SELECT r.*, u.name as requester_name, a.name as approver_name, o.order_no
      FROM accounting_requests r
@@ -90,10 +103,6 @@ accountingRequests.get('/:id', async (c) => {
   )
     .bind(id)
     .first<any>()
-  if (!row) return fail(c, '找不到此申請', 404)
-  const isOwner = row.requested_by === user.sub
-  const isApprover = user.role === 'admin' || user.role === 'manager'
-  if (!isOwner && !isApprover) return fail(c, '無權限查看此申請', 403)
   return ok(c, row)
 })
 
@@ -161,6 +170,12 @@ accountingRequests.post('/:id/approve', requireRole('admin', 'manager'), async (
   if (!existing) return fail(c, '找不到此申請', 404)
   if (existing.status !== 'pending_approval') return fail(c, '此申請非待審核狀態', 400)
 
+  // 申請必須附上至少一張附件（憑證/截圖）才可核准
+  const attCount = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM accounting_request_attachments WHERE request_id = ?')
+    .bind(id)
+    .first<{ cnt: number }>()
+  if (!attCount || attCount.cnt === 0) return fail(c, '此申請尚未提供附件或截圖，無法核准', 400)
+
   // 核准並同時寫入會計管理帳本（accounting_entries），兩步驟一起完成
   const entryResult = await c.env.DB.prepare(
     `INSERT INTO accounting_entries (entry_type, category, amount, entry_date, description, order_id, recorded_by, counterparty_name)
@@ -226,6 +241,127 @@ accountingRequests.post('/:id/reject', requireRole('admin', 'manager'), async (c
     `拒絕申請：${existing.category} $${existing.amount}（原因：${body.reason}）`
   )
   return ok(c, { id, status: 'rejected' })
+})
+
+// ============================================================
+// 附件管理（憑證/截圖等檔案，存放於 Cloudflare R2）
+// 提交申請時至少需上傳一張附件，審批人員可憑此核實申請內容
+// ============================================================
+const ALLOWED_REQUEST_ATTACHMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']
+const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024 // 20MB
+
+// GET /api/accounting-requests/:id/attachments — 列出附件
+accountingRequests.get('/:id/attachments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const existing = await getRequestWithAccess(c.env.DB, user, id)
+  if (!existing) return fail(c, '找不到此申請或無權限', 404)
+
+  const rows = await c.env.DB.prepare(
+    `SELECT a.*, u.name as uploaded_by_name
+     FROM accounting_request_attachments a
+     JOIN users u ON u.id = a.uploaded_by
+     WHERE a.request_id = ? ORDER BY a.created_at DESC`
+  )
+    .bind(id)
+    .all()
+  return ok(c, rows.results)
+})
+
+// POST /api/accounting-requests/:id/attachments — 上傳附件（multipart/form-data，欄位名 file）
+accountingRequests.post('/:id/attachments', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const existing = await getRequestWithAccess(c.env.DB, user, id)
+  if (!existing) return fail(c, '找不到此申請或無權限', 404)
+  // 申請人僅可於待審核狀態補充附件；manager/admin 審批人員則不限制（方便稽核時補存證）
+  if (existing.requested_by === user.sub && existing.status !== 'pending_approval') {
+    return fail(c, '僅待審核狀態可上傳附件', 400)
+  }
+
+  const form = await c.req.formData().catch(() => null)
+  const file = form?.get('file')
+  if (!file || !(file instanceof File)) return fail(c, '請選擇要上傳的檔案', 400)
+
+  if (file.size > MAX_ATTACHMENT_SIZE) return fail(c, '檔案大小不可超過 20MB', 400)
+
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (!ALLOWED_REQUEST_ATTACHMENT_EXTS.includes(ext)) {
+    return fail(c, '僅支援 Word、Excel、PDF、JPEG、PNG 檔案', 400)
+  }
+
+  const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fff]/g, '_')
+  const r2Key = `accounting-requests/${id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`
+
+  const buf = await file.arrayBuffer()
+  await c.env.R2.put(r2Key, buf, {
+    httpMetadata: { contentType: file.type || 'application/octet-stream' }
+  })
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO accounting_request_attachments (request_id, file_name, r2_key, content_type, file_size, uploaded_by)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  )
+    .bind(id, file.name, r2Key, file.type || 'application/octet-stream', file.size, user.sub)
+    .run()
+
+  const attachment = await c.env.DB.prepare(
+    `SELECT a.*, u.name as uploaded_by_name FROM accounting_request_attachments a
+     JOIN users u ON u.id = a.uploaded_by WHERE a.id = ?`
+  )
+    .bind(result.meta.last_row_id)
+    .first()
+
+  return ok(c, attachment, undefined, 201)
+})
+
+// GET /api/accounting-requests/:id/attachments/:attId/download — 下載附件（回傳檔案內容）
+accountingRequests.get('/:id/attachments/:attId/download', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const attId = c.req.param('attId')
+  const existing = await getRequestWithAccess(c.env.DB, user, id)
+  if (!existing) return fail(c, '找不到此申請或無權限', 404)
+
+  const att = await c.env.DB.prepare('SELECT * FROM accounting_request_attachments WHERE id = ? AND request_id = ?')
+    .bind(attId, id)
+    .first<any>()
+  if (!att) return fail(c, '找不到此附件', 404)
+
+  const object = await c.env.R2.get(att.r2_key)
+  if (!object) return fail(c, '檔案不存在或已被刪除', 404)
+
+  const encodedName = encodeURIComponent(att.file_name)
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': att.content_type || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${encodedName}"; filename*=UTF-8''${encodedName}`
+    }
+  })
+})
+
+// DELETE /api/accounting-requests/:id/attachments/:attId — 刪除附件
+accountingRequests.delete('/:id/attachments/:attId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const id = c.req.param('id')
+  const attId = c.req.param('attId')
+  const existing = await getRequestWithAccess(c.env.DB, user, id)
+  if (!existing) return fail(c, '找不到此申請或無權限', 404)
+  if (existing.status !== 'pending_approval') return fail(c, '僅待審核狀態可刪除附件', 400)
+
+  const att = await c.env.DB.prepare('SELECT * FROM accounting_request_attachments WHERE id = ? AND request_id = ?')
+    .bind(attId, id)
+    .first<any>()
+  if (!att) return fail(c, '找不到此附件', 404)
+
+  // 僅上傳者本人、或 manager 以上角色可刪除
+  if (user.role === 'sales' && att.uploaded_by !== user.sub) {
+    return fail(c, '無權限刪除此附件', 403)
+  }
+
+  await c.env.R2.delete(att.r2_key)
+  await c.env.DB.prepare('DELETE FROM accounting_request_attachments WHERE id = ?').bind(attId).run()
+  return ok(c, { id: attId })
 })
 
 export default accountingRequests
