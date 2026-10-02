@@ -26,7 +26,7 @@ Pages.login = function () {
               <i class="fas fa-user absolute left-3 top-3.5 text-ink-400 text-sm"></i>
               <input type="text" id="login-email" required autocomplete="username"
                 class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
-                placeholder="例如：admin" value="manager" />
+                placeholder="例如：admin" />
             </div>
           </div>
           <div>
@@ -35,7 +35,7 @@ Pages.login = function () {
               <i class="fas fa-lock absolute left-3 top-3.5 text-ink-400 text-sm"></i>
               <input type="password" id="login-password" required autocomplete="current-password"
                 class="w-full pl-9 pr-3 py-2.5 bg-surface-200 border border-line rounded-lg text-sm text-ink-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none placeholder:text-ink-400"
-                placeholder="輸入密碼" value="One2026#" />
+                placeholder="輸入密碼" />
             </div>
           </div>
           <div id="login-error" class="hidden text-sm text-bad-400 bg-bad-50 rounded-lg px-3 py-2"></div>
@@ -45,25 +45,10 @@ Pages.login = function () {
             <i class="fas fa-arrow-right text-xs"></i>
           </button>
         </form>
-
-        <div class="mt-6 pt-5 border-t border-line">
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <button data-quick="manager" class="quick-login text-left px-2 py-1.5 rounded bg-surface-200 hover:bg-surface-50 text-ink-400 hover:text-ink-50 transition">
-              <i class="fas fa-user-tie text-ink-400 mr-1"></i> 主管
-            </button>
-          </div>
-        </div>
       </div>
       <p class="text-center text-ink-400 text-xs mt-6">&copy; 2026 一木工程. All rights reserved.</p>
     </div>
   </div>`
-
-  document.querySelectorAll('.quick-login').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.getElementById('login-email').value = btn.dataset.quick
-      document.getElementById('login-password').value = 'One2026#'
-    })
-  })
 
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault()
