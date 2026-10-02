@@ -30,6 +30,7 @@ const routes = [
   { pattern: /^\/finance$/, page: () => Pages.finance() },
   { pattern: /^\/finance\/(\d+)$/, page: (m) => Pages.financeDetail(m[1]) },
   { pattern: /^\/accounting$/, page: () => Pages.accounting() },
+  { pattern: /^\/accounting-requests$/, page: () => Pages.accountingRequests() },
   { pattern: /^\/users$/, page: () => Pages.users() },
   { pattern: /^\/roles$/, page: () => Pages.roles() },
   { pattern: /^\/audit-log$/, page: () => Pages.auditLog() },

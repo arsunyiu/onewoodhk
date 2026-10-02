@@ -17,6 +17,7 @@ function renderLayout(activeKey) {
   ]
 
   const opsItems = [
+    { key: 'accounting-requests', href: '/accounting-requests', icon: 'fa-file-circle-check', label: '會計申請' },
     { key: 'suppliers', href: '/suppliers', icon: 'fa-user-gear', label: '供應商管理' }
   ]
   if (Auth.isManagerUp()) {

@@ -18,6 +18,7 @@
 - **報表分析**：新增 `GET /api/reports/summary?range=` 統計 API(依角色資料範圍過濾)，前端已完成**報表分析頁**：期間篩選(近30/90/180/365天/全部)、KPI總覽卡(期間報價數/成交金額/成交轉換率/平均成交金額)、近6個月報價建立量vs成交金額趨勢圖(Chart.js雙軸長條+線圖)、Pipeline即時狀態分布甜甜圈圖、業務業績排行表(依成交金額排序，含排名徽章與進度條)、客戶貢獻排行Top10(依累計成交金額，可點擊追溯客戶詳情)
 - **財務管理(訂單收款追蹤)**：新增 `order_payments` 表記錄成交訂單的收款，前端**財務頁**(`/finance`，**僅admin/manager可用**，manager依團隊範圍過濾)：訂單收款總覽(訂單金額/已收金額/未收餘額/付款狀態)、**訂單收款詳情頁**(`/finance/:id`，收款紀錄列表 + manager/admin可登記新收款/刪除收款)。sales角色無法存取此模組(側邊選單不顯示、直接輸入網址會顯示權限不足頁面、後端API回傳403)
 - **會計管理(公司出入帳)**：新增 `accounting_entries` 表記錄公司整體收入/支出(含工程支出、人工、材料採購等分類，另有 `counterparty_name` 收款人/入帳名稱欄位)，前端**會計頁**(`/accounting`，僅admin/manager可用)：收支總覽卡(近一年總收入/總支出/淨利)、近6個月收支趨勢圖(Chart.js)、分類統計、出入帳列表(可篩選類型/分類/日期區間/關鍵字、新增/編輯/admin可刪除，含收款人/入帳名稱欄位)、**週/月/年出入帳報表**(可切換期間、上一期/下一期導航、分類明細、CSV匯出，Excel相容含BOM)
+- **會計申請及審批流程**：新增 `accounting_requests` 表(狀態機：`pending_approval`→`approved`/`rejected`/`cancelled`)，**所有已登入使用者皆可提交**出入帳申請(如報銷、收款申請等；不受會計管理模組admin/manager權限限制)，經 manager/admin 核准後，系統**自動將申請內容寫入 `accounting_entries`**(錄入會計管理帳本，entry_id 回寫關聯)。前端**會計申請頁**(`/accounting-requests`，所有角色皆可用，側邊選單「會計申請」)：「我的申請」分頁(自己提交的申請列表，待審核狀態可自行取消)，manager/admin 另有「待審批」(僅顯示待審核清單，可核准/拒絕，拒絕需填寫原因)與「全部申請」(歷史稽核)分頁；新增申請Modal(類型/分類/金額/預計日期/收款人/說明)、申請詳情Modal(含審批人/核准時間/拒絕原因/對應會計帳目編號)
 - **工程管理(施工進度追蹤)**：新增 `projects`(每張成交訂單對應一筆工程紀錄，1:1)+ `project_logs`(進度時間軸紀錄)表，報價成交(`/api/quotes/:id/win`)時自動建立對應工程紀錄(預設負責人為訂單業務、地址帶入報價工程地址)。前端**工程管理頁**(`/projects`，**所有角色皆可使用**，依角色資料範圍過濾，與財務/會計不同，非manager+限定)：工程總覽卡(依狀態統計數量)、工程列表(狀態篩選/分頁，可點擊追溯來源訂單)、**工程詳情頁**(`/projects/:id`)顯示工程基本資訊(狀態/進度百分比/預計及實際完工日/工地地址/負責人/備註)、進度時間軸、**已指派判頭/工人清單**(顯示供應商名稱/類型/工種/聯絡方式/評分星級/起訖日期/備註，可就地變更指派狀態或移除)；管理操作(編輯工程設定、新增/刪除時間軸紀錄、指派/移除判頭工人)僅限 admin、manager(團隊範圍內)或**該訂單負責業務本人**，其餘使用者僅能檢視(無編輯表單)、非本人且非manager+訪問他人工程詳情會回傳404
 - **供應商管理(判頭/工人/供應商資料及評分)**：新增 `suppliers`(判頭/自聘工人/物料供應商基本資料，含類型/工種/聯絡人/電話/手機/身份證或商業登記號/地址/合作狀態/備註)+ `supplier_ratings`(評分紀錄，1-5星+評語+評分人+評分日期，可選關聯訂單)表。前端**供應商管理頁**(`/suppliers`，**所有角色皆可檢視**，新增/編輯限manager+，刪除限admin)：搜尋/類型/工種/合作狀態篩選、依名稱或評分排序、星級評分顯示(讀取平均分自動四捨五入至0.5)、新增/編輯Modal(工種下拉選單支援自訂輸入，沿用產品目錄的自訂分類模式)；**供應商詳情頁**(`/suppliers/:id`)顯示基本資料卡片、**轉數資料卡片**(銀行過數/FPS轉數快，詳見下方獨立說明)、評分紀錄列表(可新增評分、admin可刪除評分)、**參與工程清單**(反向查詢此供應商曾被指派的工程，顯示訂單編號/客戶/工程狀態/進度/工地地址/指派工種與期間，可點擊連結至工程詳情頁)、平均評分側欄(星級+總評分次數)
 - **供應商銀行/FPS轉數資料**：`suppliers` 表新增 `bank_name`(銀行名稱)/`bank_account_name`(銀行戶口名)/`bank_account_no`(銀行戶口號碼)/`fps_id`(FPS轉數快識別碼，手機號碼/電郵/FPS ID皆可)四個結構化欄位，取代原本單一自由文字 `bank_account`(保留作為「其他收款備註」，不影響既有資料)。供應商新增/編輯Modal新增「轉數資料（銀行過數 / FPS 轉數快）」表單區塊；供應商詳情頁新增獨立「轉數資料」卡片顯示以上欄位，方便直接用於轉帳/找數予判頭/工人/供應商，未登記時顯示「尚未登記轉數資料」
@@ -69,6 +70,13 @@
 | PUT | /api/accounting/entries/:id | 編輯出入帳紀錄 | manager/admin |
 | DELETE | /api/accounting/entries/:id | 刪除出入帳紀錄 | admin |
 | GET | /api/accounting/report | 週/月/年出入帳報表 `?period=week\|month\|year&date=YYYY-MM-DD`(總收入/總支出/淨利/分類明細/明細列表) | manager/admin |
+| GET | /api/accounting-requests/categories | 收入/支出分類選項(與會計管理共用) | 需登入 |
+| GET | /api/accounting-requests | 申請列表 `?scope=mine\|pending\|all&status=&page=&page_size=`(mine=自己提交；pending/all僅manager/admin可用) | 需登入 |
+| GET | /api/accounting-requests/:id | 單筆申請詳情(本人或manager/admin可查看) | 需登入 |
+| POST | /api/accounting-requests | 提交申請(類型/分類/金額/預計日期/收款人/說明) | 需登入(任何角色) |
+| POST | /api/accounting-requests/:id/cancel | 取消申請(僅本人且待審核狀態) | 需登入 |
+| POST | /api/accounting-requests/:id/approve | 核准申請，**自動寫入 accounting_entries**(回寫entry_id) | manager/admin |
+| POST | /api/accounting-requests/:id/reject | 拒絕申請(需填寫`reason`) | manager/admin |
 | GET | /api/projects/summary | 工程進度總覽(依狀態統計數量，依角色範圍) | 需登入(依角色範圍) |
 | GET | /api/projects | 工程列表 `?status=&page=&page_size=` | 需登入(依角色範圍) |
 | GET | /api/projects/:id | 工程詳情(含進度時間軸、`can_manage`旗標) | 需登入+角色範圍檢查 |
@@ -107,6 +115,7 @@
 | `orders` | 報價成交後自動產生的訂單 |
 | `order_payments` | 訂單收款紀錄(`order_id`關聯orders，`amount`/`payment_date`/`method`/`recorded_by`) |
 | `accounting_entries` | 公司出入帳紀錄(`entry_type`=income/expense，`category`如工程支出/人工/材料採購等，可選關聯`order_id`) |
+| `accounting_requests` | 會計申請及審批流程(`request_type`=income/expense，`status`=pending_approval/approved/rejected/cancelled，`requested_by`/`approver_id`/`approved_at`/`rejected_reason`，核准後`entry_id`回寫對應的`accounting_entries`紀錄) |
 | `projects` | 工程/施工進度主檔，`order_id`與`orders`一對一(UNIQUE)，`status`(not_started/in_progress/paused/completed/cancelled)，`progress_percent`(0-100)，`supervisor_id`關聯`users`(負責人) |
 | `project_logs` | 工程進度時間軸紀錄，`project_id`關聯`projects`，`created_by`關聯`users`(紀錄建立者) |
 | `suppliers` | 判頭/工人/供應商主檔，`type`(subcontractor分判判頭/worker自聘工人/supplier物料供應商/other其他)，`trade`工種，`status`(active合作中/inactive)，`bank_name`/`bank_account_name`/`bank_account_no`/`fps_id`(銀行過數/FPS轉數快轉帳資料)，`bank_account`(舊版自由文字欄位，保留相容)，`created_by`關聯`users` |
@@ -114,7 +123,7 @@
 | `project_suppliers` | 工程×供應商指派中介表，`project_id`關聯`projects`(CASCADE刪除)，`supplier_id`關聯`suppliers`，`status`(active進行中/completed已完成/cancelled已取消)，`trade`/`start_date`/`end_date`/`notes`，`assigned_by`關聯`users`(指派人) |
 | `audit_logs` | 審計紀錄，`user_id`(可為NULL，登入失敗且帳號不存在時)，`user_name`/`user_email`/`role`為操作者快照(避免使用者被刪除/改名後失去紀錄)，`action`(login_success/login_failed/create/update/delete)，`module`(auth/users/customers/quotes/products/accounting/finance/suppliers)，`resource_id`/`description`/`ip_address`/`user_agent` |
 
-`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。`accounting_entries` 表新增 `counterparty_name`（收款人/入帳名稱）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`、`migrations/0003_finance_accounting.sql`、`migrations/0004_projects.sql`、`migrations/0007_accounting_counterparty.sql`、`migrations/0008_suppliers.sql`、`migrations/0009_project_suppliers.sql`、`migrations/0010_supplier_bank_info.sql`、`migrations/0011_audit_logs.sql`
+`quotes` 表新增 `site_address`（工程地址，記錄實際施工地點，與客戶登記地址分開管理）。`accounting_entries` 表新增 `counterparty_name`（收款人/入帳名稱）。詳細欄位定義見 `migrations/0001_initial_schema.sql`、`migrations/0002_add_site_address.sql`、`migrations/0003_finance_accounting.sql`、`migrations/0004_projects.sql`、`migrations/0007_accounting_counterparty.sql`、`migrations/0008_suppliers.sql`、`migrations/0009_project_suppliers.sql`、`migrations/0010_supplier_bank_info.sql`、`migrations/0011_audit_logs.sql`、`migrations/0017_accounting_requests.sql`（會計申請及審批流程）
 
 ## 公司資訊／業務預設值（依實際報價單範本校正）
 系統預設值依「一木工程有限公司 One Wood Limited」實際業務單據校正，統一定義於 `src/types/company.ts`(後端) 與 `public/static/js/companyInfo.js`(前端，兩處欄位需保持同步，無共用模組機制)：
@@ -196,6 +205,7 @@
 /finance                財務(訂單收款總覽) ✅（admin/manager only，非manager以上訪問顯示權限不足，manager依團隊範圍過濾）
 /finance/:id             訂單收款詳情 ✅（admin/manager only，收款紀錄列表，可登記/刪除收款）
 /accounting              會計(公司出入帳) ✅（admin/manager only，收支總覽/趨勢圖/分類統計/新增編輯刪除）
+/accounting-requests     會計申請及審批流程 ✅（所有角色皆可提交申請，manager/admin可審批，核准後自動錄入會計管理）
 /users                  使用者管理 ✅（admin only，含新增/編輯，非admin訪問顯示權限不足）
 /roles                  角色管理 ✅（admin only，權限矩陣/團隊組織圖/快速編輯，非admin訪問顯示權限不足）
 /reports                報表分析 ✅（期間篩選/KPI總覽/6個月趨勢圖/Pipeline甜甜圈圖/業務排行/客戶排行，依角色資料範圍過濾）
@@ -243,6 +253,7 @@ webapp/
 │       ├── reports.ts              # 報表分析統計摘要(KPI/Pipeline/趨勢/排行)
 │       ├── finance.ts              # 財務：訂單收款CRUD + 收款總覽
 │       ├── accounting.ts          # 會計：公司出入帳CRUD + 收支摘要(manager/admin only) + 週/月/年報表
+│       ├── accountingRequests.ts  # 會計申請及審批流程：任何角色可提交，manager/admin審批，核准後自動寫入accounting_entries
 │       ├── projects.ts             # 工程管理：工程CRUD + 進度時間軸 + 判頭/工人指派管理(依角色範圍查看，管理限本人/manager+/admin)
 │       ├── suppliers.ts            # 供應商管理：判頭/工人/供應商CRUD(含銀行/FPS轉數資料) + 評分紀錄子資源(新增/編輯限manager+，刪除限admin) + 參與工程反向查詢
 │       └── audit.ts                # 審計紀錄查詢 API(admin only，分頁+多條件篩選、統計摘要)
@@ -273,6 +284,7 @@ webapp/
 │           ├── profile.js          # 個人資料設定頁（所有登入者）
 │           ├── finance.js          # 財務頁（訂單收款總覽 + 收款詳情/登記收款）
 │           ├── accounting.js      # 會計頁（公司出入帳，manager/admin only）
+│           ├── accountingRequests.js # 會計申請頁（所有角色可提交，manager/admin審批）
 │           ├── projects.js         # 工程管理頁（工程總覽/列表 + 詳情頁進度時間軸/已指派判頭工人清單/指派Modal，管理限本人/manager+/admin）
 │           ├── suppliers.js        # 供應商管理頁（列表/新增編輯Modal(含銀行/FPS轉數資料) + 詳情頁轉數資料卡片/評分紀錄/星級評分元件/參與工程清單）
 │           ├── auditLog.js         # 審計紀錄頁（admin only，統計卡片/篩選查詢/分頁瀏覽）
@@ -291,10 +303,10 @@ curl http://localhost:3000
 
 ## 部署
 - **Platform**: Cloudflare Workers（Genspark Hosted Deploy，`gsk hosted *`）+ D1
-- **Status**: ✅ 已部署至正式環境（會計報表、供應商管理、工程×供應商指派整合、供應商銀行/FPS轉數資料四項功能皆已上線）。**審計紀錄(Audit Log)功能已完成本機開發並測試通過，尚未部署至正式環境**，待使用者確認後執行 `gsk hosted deploy`
+- **Status**: ✅ 已部署至正式環境（會計報表、供應商管理、工程×供應商指派整合、供應商銀行/FPS轉數資料、審計紀錄、ID登入等功能皆已上線）。**會計申請及審批流程功能已完成本機開發並測試通過（含API curl測試與Playwright瀏覽器端到端測試），尚未部署至正式環境**，待使用者確認後執行 `gsk hosted deploy`
 - **正式網址**: https://app.onewood.com.hk （自訂網域，綁定至 Hosted Worker）
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS(CDN) + Chart.js + Axios
-- **Last Updated**: 2026-08-14（新增審計紀錄(Audit Log)功能：記錄登入成功/失敗紀錄與使用者管理/客戶刪除/報價刪除/產品下架/供應商異動/會計出入帳/財務收款等重要操作，僅限admin查閱，含統計卡片與多條件篩選查詢；此前已完成並部署：會計出入帳新增收款人/入帳名稱欄位與週/月/年報表(含CSV匯出)、供應商管理功能(維護判頭/工人/供應商資料及評分系統)、工程×供應商指派整合、供應商銀行/FPS轉數資料結構化欄位）
+- **Last Updated**: 2026-10-02（新增**會計申請及審批流程**：新增 `accounting_requests` 表與 `/accounting-requests` 頁面，任何角色皆可提交出入帳申請，manager/admin審批(核准/拒絕)，核准後自動寫入 `accounting_entries` 完成「錄入會計管理」；尚未部署。此前已完成並部署：登入方式改為ID登入(Email前綴)+統一密碼、審計紀錄(Audit Log)功能、會計出入帳新增收款人/入帳名稱欄位與週/月/年報表(含CSV匯出)、供應商管理功能、工程×供應商指派整合、供應商銀行/FPS轉數資料結構化欄位）
 
 ### ⚠️ 首次部署 / 重建 D1・Worker 後的固定檢查清單
 
