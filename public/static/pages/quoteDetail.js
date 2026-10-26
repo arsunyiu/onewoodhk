@@ -216,29 +216,24 @@ function renderQuoteDetail(q) {
             </div>
             <p class="text-[11px] text-gray-400 mb-3">如需分期收款（例如：訂金 + 尾款），可依每期分別開立獨立發票，各自填寫金額與備註</p>
             <div id="qd-invoice-summary" class="text-xs text-gray-500 mb-3"></div>
-            <div id="qd-invoice-add-form" class="hidden mb-3 p-3 rounded-lg bg-gray-50 border border-gray-100 space-y-2">
+            <div id="qd-invoice-add-form" class="hidden mb-3 p-3 rounded-lg bg-gray-50 border border-gray-100 space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="text-[11px] text-gray-400">金額 (${Fmt.escapeHtml(q.currency || 'HKD')})</label>
-                  <input id="qd-invoice-amount-input" type="number" step="0.01" min="0.01" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：51800" />
+                  <label class="text-[11px] text-gray-400">分幾期</label>
+                  <input id="qd-invoice-count-input" type="number" step="1" min="1" max="12" value="1" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-gray-400">發票日期</label>
+                  <label class="text-[11px] text-gray-400">發票日期（套用至本批所有發票）</label>
                   <input id="qd-invoice-date-input" type="date" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" value="${new Date().toISOString().slice(0, 10)}" />
                 </div>
               </div>
-              <div>
-                <label class="text-[11px] text-gray-400">總共分幾期（選填，供PDF顯示「第X期／共Y期」，如訂金+尾款共2期）</label>
-                <input id="qd-invoice-installment-total-input" type="number" step="1" min="1" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：2（不填則PDF僅顯示期數，不顯示共幾期）" />
-              </div>
-              <div>
-                <label class="text-[11px] text-gray-400">備註（此張發票專屬，如「訂金 Deposit payment」）</label>
-                <textarea id="qd-invoice-remark-input" rows="2" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="例：訂金 Deposit payment"></textarea>
-              </div>
+              <p class="text-[11px] text-gray-400">報價總額 <span class="font-semibold text-gray-600">${Fmt.currency(q.total_amount, q.currency)}</span> 會自動帶入，只需填寫各期所佔百分比，系統將自動計算金額並產生對應張數的發票（各自獨立編號）</p>
+              <div id="qd-invoice-installment-rows" class="space-y-2"></div>
+              <div id="qd-invoice-installment-check" class="text-[11px] text-gray-500"></div>
               <div class="flex justify-end gap-2">
                 <button id="qd-invoice-cancel-btn" class="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5">取消</button>
                 <button id="qd-invoice-save-btn" class="text-xs bg-primary-600 hover:bg-primary-700 text-white font-medium px-3 py-1.5 rounded-lg">
-                  <i class="fas fa-save mr-1"></i>建立發票
+                  <i class="fas fa-save mr-1"></i>產生發票
                 </button>
               </div>
             </div>
@@ -383,9 +378,14 @@ function bindQuoteDetailEvents(q) {
   bind('qd-act-win', () => runQuoteAction(q.id, 'win', '確定標記此報價單為成交？系統將自動建立訂單。'))
   bind('qd-act-lose', () => runQuoteAction(q.id, 'lose', '確定要將此報價單標記為流失嗎？'))
   bind('qd-export-pdf', () => exportQuotePdf(q))
-  bind('qd-invoice-add-btn', () => toggleInvoiceAddForm(true))
-  bind('qd-invoice-cancel-btn', () => toggleInvoiceAddForm(false))
+  bind('qd-invoice-add-btn', () => toggleInvoiceAddForm(true, q))
+  bind('qd-invoice-cancel-btn', () => toggleInvoiceAddForm(false, q))
   bind('qd-invoice-save-btn', () => createQuoteInvoice(q))
+  const installmentCountInput = document.getElementById('qd-invoice-count-input')
+  if (installmentCountInput) {
+    installmentCountInput.addEventListener('input', () => renderInstallmentRows(q))
+    installmentCountInput.addEventListener('change', () => renderInstallmentRows(q))
+  }
 
   const fileInput = document.getElementById('qd-attachment-input')
   if (fileInput) {
@@ -543,20 +543,104 @@ async function deleteQuoteAttachment(quoteId, attId) {
 
 // ============================================================
 // 發票管理（支援單一報價單分期開立多張發票，如訂金 + 尾款）
+// 金額自動取自報價單總額：使用者只需設定「分幾期」及「每期佔百分比」，
+// 系統即自動計算各期金額，一次過產生對應張數、各自獨立編號的發票
 // ============================================================
 let QuoteInvoicesCache = []
 
-function toggleInvoiceAddForm(show) {
+function toggleInvoiceAddForm(show, q) {
   const form = document.getElementById('qd-invoice-add-form')
   if (!form) return
   form.classList.toggle('hidden', !show)
   if (show) {
-    const amountInput = document.getElementById('qd-invoice-amount-input')
-    if (amountInput) { amountInput.value = ''; amountInput.focus() }
-    const remarkInput = document.getElementById('qd-invoice-remark-input')
-    if (remarkInput) remarkInput.value = ''
-    const installmentTotalInput = document.getElementById('qd-invoice-installment-total-input')
-    if (installmentTotalInput) installmentTotalInput.value = ''
+    const countInput = document.getElementById('qd-invoice-count-input')
+    if (countInput) countInput.value = 1
+    renderInstallmentRows(q)
+  }
+}
+
+// 已開發票總額佔報價單總額的百分比（用於計算「尚餘」可分配的百分比），
+// 四捨五入至小數2位，避免浮點數誤差
+function getInvoicedPercent(q) {
+  const totalAmount = Number(q.total_amount || 0)
+  if (totalAmount <= 0) return 0
+  const invoicedTotal = QuoteInvoicesCache.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
+  return Math.round((invoicedTotal / totalAmount) * 10000) / 100
+}
+
+function getRemainingPercent(q) {
+  return Math.max(0, Math.round((100 - getInvoicedPercent(q)) * 100) / 100)
+}
+
+// 依目前「分幾期」輸入值重新產生每期的百分比/備註輸入列；
+// 若使用者先前已輸入過的列（依索引對應）會盡量保留原值，只有新增的列套用預設值
+function renderInstallmentRows(q) {
+  const countInput = document.getElementById('qd-invoice-count-input')
+  const rowsEl = document.getElementById('qd-invoice-installment-rows')
+  if (!countInput || !rowsEl) return
+  let count = parseInt(countInput.value, 10)
+  if (!Number.isFinite(count) || count < 1) count = 1
+  if (count > 12) count = 12
+  countInput.value = count
+
+  const existingRows = Array.from(rowsEl.querySelectorAll('.qd-installment-row')).map((row) => ({
+    percent: row.querySelector('.qd-installment-percent').value,
+    remark: row.querySelector('.qd-installment-remark').value
+  }))
+
+  const remainingPercent = getRemainingPercent(q)
+  const evenSplit = Math.round((remainingPercent / count) * 100) / 100
+
+  const rowsHtml = []
+  for (let i = 0; i < count; i++) {
+    const existing = existingRows[i]
+    const defaultPercent = existing ? existing.percent : (count === 1 ? remainingPercent : evenSplit)
+    const defaultRemark = existing
+      ? existing.remark
+      : (count > 1 && i === 0 ? '訂金 Deposit' : (count > 1 && i === count - 1 ? '尾款 Final payment' : ''))
+    rowsHtml.push(`
+    <div class="qd-installment-row flex items-center gap-2" data-idx="${i}">
+      <span class="text-xs text-gray-400 w-10 shrink-0">第${i + 1}期</span>
+      <div class="relative shrink-0">
+        <input type="number" step="0.01" min="0" max="100" value="${defaultPercent}" class="qd-installment-percent w-20 border border-gray-200 rounded-lg pl-2 pr-5 py-1.5 text-sm text-right focus:ring-2 focus:ring-primary-500 outline-none" />
+        <span class="absolute right-2 top-1.5 text-xs text-gray-400 pointer-events-none">%</span>
+      </div>
+      <span class="qd-installment-amount text-xs text-gray-500 w-28 text-right shrink-0">-</span>
+      <input type="text" placeholder="備註（如：訂金）" value="${Fmt.escapeHtml(defaultRemark)}" class="qd-installment-remark flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+    </div>`)
+  }
+  rowsEl.innerHTML = rowsHtml.join('')
+
+  rowsEl.querySelectorAll('.qd-installment-percent').forEach((input) => {
+    input.addEventListener('input', () => updateInstallmentCheck(q))
+  })
+  updateInstallmentCheck(q)
+}
+
+// 即時顯示每期換算後的金額，以及目前所有期數百分比加總是否剛好等於「尚餘」百分比
+function updateInstallmentCheck(q) {
+  const rowsEl = document.getElementById('qd-invoice-installment-rows')
+  const checkEl = document.getElementById('qd-invoice-installment-check')
+  if (!rowsEl || !checkEl) return
+  const totalAmount = Number(q.total_amount || 0)
+  const rows = Array.from(rowsEl.querySelectorAll('.qd-installment-row'))
+  const percents = rows.map((row) => Number(row.querySelector('.qd-installment-percent').value) || 0)
+
+  rows.forEach((row, idx) => {
+    const amountEl = row.querySelector('.qd-installment-amount')
+    const amt = Math.round(totalAmount * percents[idx]) / 100
+    if (amountEl) amountEl.textContent = Fmt.currency(amt, q.currency, 2)
+  })
+
+  const sumPct = Math.round(percents.reduce((s, p) => s + p, 0) * 100) / 100
+  const remainingPercent = getRemainingPercent(q)
+  const diff = Math.round((sumPct - remainingPercent) * 100) / 100
+  if (Math.abs(diff) < 0.01) {
+    checkEl.innerHTML = `<span class="text-green-600"><i class="fas fa-circle-check mr-1"></i>合計 ${sumPct.toFixed(2)}%，剛好等於尚餘 ${remainingPercent.toFixed(2)}%</span>`
+  } else if (sumPct > remainingPercent) {
+    checkEl.innerHTML = `<span class="text-red-500"><i class="fas fa-triangle-exclamation mr-1"></i>合計 ${sumPct.toFixed(2)}%，超出尚餘 ${remainingPercent.toFixed(2)}% 共 ${(sumPct - remainingPercent).toFixed(2)}%</span>`
+  } else {
+    checkEl.innerHTML = `<span class="text-orange-500"><i class="fas fa-circle-info mr-1"></i>合計 ${sumPct.toFixed(2)}%，尚餘 ${remainingPercent.toFixed(2)}%（還差 ${(remainingPercent - sumPct).toFixed(2)}% 未分配）</span>`
   }
 }
 
@@ -622,32 +706,55 @@ function renderQuoteInvoicesList(q) {
   })
 }
 
+// 依「分幾期」+「每期百分比」批量產生發票：金額自動以報價單總額 x 百分比計算，
+// 依序呼叫建立發票 API（後端已會自動編號 INV-{報價單號}-{序號}，故每張發票編號各自不同），
+// installment_total 自動帶入本批的期數，讓PDF顯示「第X期／共Y期」
 async function createQuoteInvoice(q) {
-  const amountInput = document.getElementById('qd-invoice-amount-input')
   const dateInput = document.getElementById('qd-invoice-date-input')
-  const remarkInput = document.getElementById('qd-invoice-remark-input')
-  const installmentTotalInput = document.getElementById('qd-invoice-installment-total-input')
-  const amount = Number(amountInput ? amountInput.value : 0)
-  if (!Number.isFinite(amount) || amount <= 0) {
-    showToast('請輸入有效金額', 'error')
+  const rowsEl = document.getElementById('qd-invoice-installment-rows')
+  if (!rowsEl) return
+  const totalAmount = Number(q.total_amount || 0)
+  const rows = Array.from(rowsEl.querySelectorAll('.qd-installment-row')).map((row) => ({
+    percent: Number(row.querySelector('.qd-installment-percent').value) || 0,
+    remark: row.querySelector('.qd-installment-remark').value.trim()
+  }))
+
+  if (!rows.length) {
+    showToast('請至少設定一期', 'error')
     return
   }
-  const installmentTotal = installmentTotalInput && installmentTotalInput.value ? Number(installmentTotalInput.value) : undefined
+  if (rows.some((r) => !(r.percent > 0))) {
+    showToast('每期百分比必須大於 0', 'error')
+    return
+  }
+  const sumPct = Math.round(rows.reduce((s, r) => s + r.percent, 0) * 100) / 100
+  const remainingPercent = getRemainingPercent(q)
+  if (sumPct - remainingPercent > 0.01) {
+    showToast(`百分比合計 ${sumPct.toFixed(2)}% 超出尚餘 ${remainingPercent.toFixed(2)}%，請調整`, 'error')
+    return
+  }
+
+  const installmentTotal = rows.length > 1 ? rows.length : undefined
+  const issueDate = dateInput ? dateInput.value : undefined
   const btn = document.getElementById('qd-invoice-save-btn')
   const originalHtml = btn ? btn.innerHTML : ''
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>建立中...' }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>產生中...' }
   try {
-    await API.post(`/quotes/${q.id}/invoices`, {
-      amount,
-      issue_date: dateInput ? dateInput.value : undefined,
-      remark: remarkInput ? remarkInput.value.trim() : '',
-      installment_total: installmentTotal
-    })
-    showToast('發票已建立')
-    toggleInvoiceAddForm(false)
+    for (const row of rows) {
+      const amount = Math.round(totalAmount * row.percent) / 100
+      await API.post(`/quotes/${q.id}/invoices`, {
+        amount,
+        issue_date: issueDate,
+        remark: row.remark,
+        installment_total: installmentTotal
+      })
+    }
+    showToast(rows.length > 1 ? `已產生 ${rows.length} 張發票` : '發票已建立')
+    toggleInvoiceAddForm(false, q)
     loadQuoteInvoices(q)
   } catch (err) {
     showToast(err.message || '建立失敗', 'error')
+    loadQuoteInvoices(q)
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = originalHtml }
   }
