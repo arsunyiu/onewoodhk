@@ -228,6 +228,39 @@ customers.post('/:id/contacts', async (c) => {
   return ok(c, contact, undefined, 201)
 })
 
+// DELETE /api/customers/:id/contacts/:contactId
+customers.delete('/:id/contacts/:contactId', async (c) => {
+  const user = c.get('user') as JwtPayload
+  const customerId = c.req.param('id')
+  const contactId = c.req.param('contactId')
+
+  const customer = await c.env.DB.prepare('SELECT * FROM customers WHERE id = ?').bind(customerId).first<any>()
+  if (!customer) return fail(c, '找不到此客戶', 404)
+  if (user.role === 'sales' && customer.owner_id !== user.sub) {
+    return fail(c, '無權限刪除此聯絡人', 403)
+  }
+  if (user.role === 'manager') {
+    const ownerIds = await getVisibleOwnerIds(c.env.DB, user)
+    if (!ownerIds!.includes(customer.owner_id)) return fail(c, '無權限刪除此聯絡人', 403)
+  }
+
+  const contact = await c.env.DB.prepare('SELECT * FROM contacts WHERE id = ? AND customer_id = ?')
+    .bind(contactId, customerId)
+    .first<any>()
+  if (!contact) return fail(c, '找不到此聯絡人', 404)
+
+  const quoteRef = await c.env.DB.prepare('SELECT id, quote_no FROM quotes WHERE contact_id = ? LIMIT 1')
+    .bind(contactId)
+    .first<any>()
+  if (quoteRef) {
+    return fail(c, `此聯絡人已被報價單 ${quoteRef.quote_no} 引用，無法刪除。請先於報價單改選其他聯絡人後再刪除。`, 400)
+  }
+
+  await c.env.DB.prepare('DELETE FROM contacts WHERE id = ?').bind(contactId).run()
+  await logAuditFromUser(c, user, 'delete', 'contacts', contactId, `刪除聯絡人：${contact.name}（客戶：${customer.company_name || customerId}）`)
+  return ok(c, { deleted: true })
+})
+
 // ---- Activities sub-resource ----
 customers.get('/:id/activities', async (c) => {
   const rows = await c.env.DB.prepare(

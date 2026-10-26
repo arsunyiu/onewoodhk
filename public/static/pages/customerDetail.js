@@ -119,7 +119,7 @@ function renderCustomerDetail(cust) {
     </div>
   `)
 
-  renderContactsList(cust.contacts || [])
+  renderContactsList(cust.contacts || [], cust.id)
   renderActivitiesTimeline(cust.activities || [])
   renderCustomerQuotesList(cust.quotes || [])
 
@@ -127,7 +127,7 @@ function renderCustomerDetail(cust) {
   document.getElementById('cd-add-activity').addEventListener('click', () => openActivityModal(cust.id))
 }
 
-function renderContactsList(contacts) {
+function renderContactsList(contacts, customerId) {
   const el = document.getElementById('cd-contacts-list')
   if (!contacts.length) {
     el.innerHTML = `<p class="text-sm text-gray-400 py-2">尚無聯絡人資料</p>`
@@ -149,7 +149,25 @@ function renderContactsList(contacts) {
         </p>
         ${ct.notes ? `<p class="text-xs text-gray-400 mt-1">${Fmt.escapeHtml(ct.notes)}</p>` : ''}
       </div>
+      <button class="cd-delete-contact-btn text-gray-300 hover:text-red-500 px-2 py-1 shrink-0" data-contact-id="${ct.id}" title="刪除聯絡人">
+        <i class="fas fa-trash-can"></i>
+      </button>
     </div>`).join('')
+
+  el.querySelectorAll('.cd-delete-contact-btn').forEach((btn) => {
+    btn.addEventListener('click', () => deleteContact(customerId, btn.dataset.contactId))
+  })
+}
+
+async function deleteContact(customerId, contactId) {
+  if (!confirm('確定要刪除此聯絡人嗎？')) return
+  try {
+    await API.delete(`/customers/${customerId}/contacts/${contactId}`)
+    showToast('聯絡人已刪除')
+    Pages.customerDetail(customerId)
+  } catch (err) {
+    showToast(err.message || '刪除失敗', 'error')
+  }
 }
 
 function renderActivitiesTimeline(activities) {
