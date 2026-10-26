@@ -1073,14 +1073,21 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 }
 
 // 共用的 HTML -> PDF 產生流程（報價單／發票共用，僅版面內容與檔名不同）
-// 改用瀏覽器原生列印（隱藏 iframe + window.print()），由使用者在列印對話框
-// 選擇「另存為 PDF」。輸出的 PDF 文字為原生文字（非圖片截圖），可選取/複製，
-// 中文亦由瀏覽器/系統字型直接渲染，不會有字型不支援造成的亂碼問題。
+// 改用瀏覽器原生列印，由使用者在列印對話框選擇「另存為 PDF」。輸出的 PDF
+// 文字為原生文字（非圖片截圖），可選取/複製，中文亦由瀏覽器/系統字型直接
+// 渲染，不會有字型不支援造成的亂碼問題。
 // 分頁邏輯改用純 CSS：
 //   - class="pdf-row" 的區塊套用 page-break-inside: avoid，避免表格列/小計/
 //     簽署欄等區塊被從中間裁斷到下一頁
 //   - class="pdf-page-break" 的區塊套用 page-break-before: always，強制
 //     Summary 頁與 Breakdown 頁分頁
+//
+// 實作改用「獨立視窗（window.open）」而非隱藏 iframe：
+// iOS Safari／Chrome 對隱藏或零尺寸 iframe 呼叫 contentWindow.print() 存在已知
+// 限制——實際觸發列印的常常是「外層主頁面」本身（即使用者畫面上目前顯示的整個
+// App 介面），而非 iframe 裡準備好的發票/報價單版面，導致匯出結果變成網站截圖
+// 而非正確文件內容。改用 window.open() 開啟同源的獨立視窗、直接對該視窗呼叫
+// print()，可在所有主流瀏覽器（含 iOS Safari）穩定印出視窗本身的內容。
 function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
   return new Promise((resolve) => {
     const originalHtml = btn ? btn.innerHTML : ''
@@ -1096,29 +1103,9 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
       }
     }
 
-    // 瀏覽器的列印/另存為 PDF 對話框（包括開啟後在 Adobe Acrobat 等
-    // PDF 檢視器分頁上顯示的標題）實際讀取的是「外層視窗」的 document.title，
-    // 而非 iframe 自己的 <title>。因此在觸發列印前，暫時把外層標題換成
-    // 我們想要的文件標題（例如「Quotation - 客戶名稱」），列印結束後再還原，
-    // 避免影響 SPA 其他頁面顯示的標題。
-    const originalOuterTitle = document.title
-    const desiredOuterTitle = outerTitle || String(fileName || '').replace(/\.pdf$/i, '')
-    const restoreOuterTitle = () => {
-      document.title = originalOuterTitle
-    }
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
-    iframe.style.border = '0'
-    document.body.appendChild(iframe)
-
-    // 檔名（去除 .pdf 副檔名）作為列印視窗標題，部分瀏覽器（如 Chrome）
+    // 檔名（去除 .pdf 副檔名）／outerTitle 作為列印視窗標題，部分瀏覽器
     // 另存為 PDF 時會以視窗標題作為預設檔名
-    const docTitle = String(fileName || '').replace(/\.pdf$/i, '')
+    const docTitle = outerTitle || String(fileName || '').replace(/\.pdf$/i, '')
 
     const printLang = (typeof I18n !== 'undefined' && I18n.getLang() === 'en') ? 'en' : 'zh-Hant'
     const printDocHtml = `<!DOCTYPE html>
@@ -1147,20 +1134,33 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
 <body>${html}</body>
 </html>`
 
-    const doc = iframe.contentWindow.document
-    doc.open()
-    doc.write(printDocHtml)
-    doc.close()
+    // 以使用者點擊的同一輪事件循環內同步呼叫 window.open，避免被瀏覽器的
+    // 彈出視窗攔截器擋下（大多數瀏覽器僅允許由使用者手勢直接觸發的 open）
+    const printWin = window.open('', '_blank')
+    if (!printWin) {
+      showToast('無法開啟列印視窗，請允許此網站的彈出視窗後再試', 'error')
+      restoreBtn()
+      resolve()
+      return
+    }
+
+    printWin.document.open()
+    printWin.document.write(printDocHtml)
+    printWin.document.close()
 
     let done = false
     const finish = () => {
       if (done) return
       done = true
       restoreBtn()
-      restoreOuterTitle()
-      // 延遲移除 iframe，避免部分瀏覽器在列印對話框仍讀取 iframe 內容時被中途移除
+      // 延遲關閉視窗，避免部分瀏覽器在列印對話框仍讀取視窗內容時被中途關閉；
+      // 若使用者已自行關閉視窗，closed 已為 true，略過即可
       setTimeout(() => {
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+        try {
+          if (!printWin.closed) printWin.close()
+        } catch (err) {
+          // 忽略跨視窗存取時可能的例外
+        }
       }, 1000)
       resolve()
     }
@@ -1170,11 +1170,10 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
       if (printed) return
       printed = true
       try {
-        document.title = desiredOuterTitle
-        iframe.contentWindow.focus()
+        printWin.focus()
         // afterprint：使用者完成列印/另存為 PDF 對話框（無論確認或取消）後觸發
-        iframe.contentWindow.addEventListener('afterprint', finish)
-        iframe.contentWindow.print()
+        printWin.addEventListener('afterprint', finish)
+        printWin.print()
       } catch (err) {
         console.error(err)
         showToast('PDF 匯出失敗，請稍後再試', 'error')
@@ -1186,7 +1185,7 @@ function renderHtmlToPdfAndSave(html, fileName, btn, busyLabel, outerTitle) {
     }
 
     // 等待版面內的圖片（Logo）載入完成再觸發列印，避免圖片還沒渲染出來
-    const images = Array.from(doc.images || [])
+    const images = Array.from(printWin.document.images || [])
     if (images.length === 0) {
       setTimeout(triggerPrint, 150)
     } else {
