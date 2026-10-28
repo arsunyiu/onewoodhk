@@ -184,19 +184,19 @@ function renderQuoteForm(existing) {
             ${disabled ? '' : `<button id="qf-add-item" class="text-primary-600 text-sm hover:underline"><i class="fas fa-plus mr-1"></i>新增項目</button>`}
           </div>
           <div class="overflow-x-auto border border-gray-100 rounded-lg">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm table-fixed">
               <thead>
                 <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-                  <th class="px-3 py-2 font-medium w-28">工程分類</th>
-                  <th class="px-3 py-2 font-medium min-w-[170px]">產品/項目</th>
-                  <th class="px-3 py-2 font-medium w-24">Location<br/>位置</th>
-                  <th class="px-3 py-2 font-medium min-w-[150px]">說明</th>
-                  <th class="px-3 py-2 font-medium w-20">單位</th>
-                  <th class="px-3 py-2 font-medium w-20">數量</th>
-                  <th class="px-3 py-2 font-medium w-28">單價</th>
-                  <th class="px-3 py-2 font-medium w-20">折扣%</th>
-                  <th class="px-3 py-2 font-medium text-right w-28">小計</th>
-                  <th class="px-3 py-2 w-10"></th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">工程分類</th>
+                  <th class="px-3 py-2 font-medium w-[25%]">產品/項目</th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">Location<br/>位置</th>
+                  <th class="px-3 py-2 font-medium w-[25%]">說明</th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">單位</th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">數量</th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">單價</th>
+                  <th class="px-3 py-2 font-medium w-[6.25%]">折扣%</th>
+                  <th class="px-3 py-2 font-medium text-right w-[6.25%]">小計</th>
+                  <th class="px-3 py-2 w-[6.25%]"></th>
                 </tr>
               </thead>
               <tbody id="qf-items-body"></tbody>
