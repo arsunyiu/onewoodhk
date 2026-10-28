@@ -187,16 +187,16 @@ function renderQuoteForm(existing) {
             <table class="w-full text-sm table-fixed">
               <thead>
                 <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-                  <th class="px-3 py-2 font-medium w-[6.67%]">工程分類</th>
+                  <th class="px-3 py-2 font-medium w-[10%]">工程分類</th>
                   <th class="px-3 py-2 font-medium w-[20%]">產品/項目</th>
-                  <th class="px-3 py-2 font-medium w-[6.67%]">Location<br/>位置</th>
+                  <th class="px-3 py-2 font-medium w-[6%]">Location<br/>位置</th>
                   <th class="px-3 py-2 font-medium w-[20%]">說明</th>
-                  <th class="px-3 py-2 font-medium w-[6.67%]">單位</th>
-                  <th class="px-3 py-2 font-medium w-[6.67%]">數量</th>
+                  <th class="px-3 py-2 font-medium w-[6%]">單位</th>
+                  <th class="px-3 py-2 font-medium w-[6%]">數量</th>
                   <th class="px-3 py-2 font-medium w-[10%]">單價</th>
-                  <th class="px-3 py-2 font-medium w-[6.67%]">折扣%</th>
+                  <th class="px-3 py-2 font-medium w-[6%]">折扣%</th>
                   <th class="px-3 py-2 font-medium text-right w-[10%]">小計</th>
-                  <th class="px-3 py-2 w-[6.65%]"></th>
+                  <th class="px-3 py-2 w-[6%]"></th>
                 </tr>
               </thead>
               <tbody id="qf-items-body"></tbody>
