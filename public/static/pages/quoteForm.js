@@ -190,9 +190,9 @@ function renderQuoteForm(existing) {
                   <th class="px-3 py-2 font-medium w-[10%]">工程分類</th>
                   <th class="px-3 py-2 font-medium w-[20%]">產品/項目</th>
                   <th class="px-3 py-2 font-medium w-[6%]">Location<br/>位置</th>
-                  <th class="px-3 py-2 font-medium w-[20%]">說明</th>
+                  <th class="px-3 py-2 font-medium w-[14%]">說明</th>
                   <th class="px-3 py-2 font-medium w-[6%]">單位</th>
-                  <th class="px-3 py-2 font-medium w-[6%]">數量</th>
+                  <th class="px-3 py-2 font-medium w-[12%]">數量</th>
                   <th class="px-3 py-2 font-medium w-[10%]">單價</th>
                   <th class="px-3 py-2 font-medium w-[6%]">折扣%</th>
                   <th class="px-3 py-2 font-medium text-right w-[10%]">小計</th>
