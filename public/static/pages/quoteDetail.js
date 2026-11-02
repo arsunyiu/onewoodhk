@@ -912,44 +912,44 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       runningIdx += 1
       return `
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
-      <td style="padding:6px 4px;color:#9ca3af;">${runningIdx}</td>
-      <td style="padding:6px 4px;color:#4b5563;">${esc(tr(it.location) || '-')}</td>
-      <td style="padding:6px 4px;color:#1f2937;">${esc(tr(it.item_name))}${it.description ? `<div style="font-size:10px;color:#4b5563;margin-top:1px;">${esc(tr(it.description))}</div>` : ''}</td>
-      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
-      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${esc(tr(it.unit))}</td>
-      <td style="padding:6px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
-      <td style="padding:6px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
+      <td style="padding:3px 4px;color:#9ca3af;">${runningIdx}</td>
+      <td style="padding:3px 4px;color:#4b5563;">${esc(tr(it.location) || '-')}</td>
+      <td style="padding:3px 4px;color:#1f2937;">${esc(tr(it.item_name))}${it.description ? `<div style="font-size:9px;color:#4b5563;margin-top:0px;">${esc(tr(it.description))}</div>` : ''}</td>
+      <td style="padding:3px 4px;text-align:right;color:#4b5563;">${it.quantity}</td>
+      <td style="padding:3px 4px;text-align:right;color:#4b5563;">${esc(tr(it.unit))}</td>
+      <td style="padding:3px 4px;text-align:right;color:#4b5563;">${Number(it.unit_price).toLocaleString()}</td>
+      <td style="padding:3px 4px;text-align:right;font-weight:600;color:#1f2937;">${Number(it.line_total).toLocaleString()}</td>
     </tr>`
     }).join('')
     return `
     <tr class="pdf-row">
-      <td colspan="7" style="padding:0px 4px 12px 4px;line-height:1;font-weight:700;font-size:11px;color:#fff;background:${headerColor};">${esc(categoryHeaderPure(group.category, lang))}</td>
+      <td colspan="7" style="padding:0px 4px 6px 4px;line-height:1;font-weight:700;font-size:10px;color:#fff;background:${headerColor};">${esc(categoryHeaderPure(group.category, lang))}</td>
     </tr>
     ${rows}
     <tr class="pdf-row" style="border-bottom:1px solid #e5e7eb;">
-      <td colspan="6" style="padding:5px 4px;text-align:right;font-size:10px;color:#6b7280;">${L.subtotalLabel}</td>
-      <td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:700;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
+      <td colspan="6" style="padding:3px 4px;text-align:right;font-size:9px;color:#6b7280;">${L.subtotalLabel}</td>
+      <td style="padding:3px 4px;text-align:right;font-size:10px;font-weight:700;color:#1f2937;">${group.subtotal.toLocaleString()}</td>
     </tr>`
   }).join('')
 
   // Summary 頁：各工程分類（A/B/C...）先滙總小計，仿照參考報價單 SUMMARY 頁格式
   const summaryRows = itemGroups.map((group) => `
     <tr class="pdf-row" style="border-bottom:1px solid #f0f0f0;">
-      <td style="padding:7px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
-      <td style="padding:7px 6px;color:#1f2937;">${esc(categoryNamePure(group.category, lang))}</td>
-      <td style="padding:7px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      <td style="padding:4px 6px;color:#4b5563;font-weight:600;">${esc(categoryLetter(group.category) || '-')}</td>
+      <td style="padding:4px 6px;color:#1f2937;">${esc(categoryNamePure(group.category, lang))}</td>
+      <td style="padding:4px 6px;text-align:right;color:#1f2937;">${group.subtotal.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>`).join('')
 
   const discountAmount = q.discount_value ? (q.subtotal - (q.total_amount - q.tax_amount)) : 0
 
   const discountRow = q.discount_value ? `
-    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
+    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:1.5px 0;">
       <span>${L.discountLabel(q.discount_type === 'percent' ? q.discount_value : null)}</span>
       <span>-${Fmt.currency(discountAmount, q.currency, 2)}</span>
     </div>` : ''
 
   const taxRow = q.tax_amount ? `
-    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:3px 0;">
+    <div style="display:flex;justify-content:space-between;color:#6b7280;padding:1.5px 0;">
       <span>${L.taxLabel((q.tax_rate * 100).toFixed(0))}</span>
       <span>${Fmt.currency(q.tax_amount, q.currency, 2)}</span>
     </div>` : ''
@@ -994,11 +994,11 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   // 簽名留白高度已縮減，確保整個 SUMMARY 頁（含此簽署欄）能收在同一頁，不再溢出到下一頁
   const signatureBlock = `
-    <div class="pdf-row" style="margin-top:14px;">
-      <div style="background:#dce1e7;padding:5px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
+    <div class="pdf-row" style="margin-top:8px;">
+      <div style="background:#dce1e7;padding:3px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
       <!-- 用CSS grid明確分3列（說明文字/簽名留白/簽名線），同一列高度左右共用，
            確保無論說明文字長短不一，中間簽名留白與底部簽名線都能左右對齊同一水平 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 44px auto;gap:0 24px;margin-top:10px;font-size:11px;color:#1f2937;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 32px auto;gap:0 24px;margin-top:6px;font-size:11px;color:#1f2937;">
         <div style="grid-column:1;grid-row:1;">
           <div>${L.signOnBehalf}</div>
           <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
