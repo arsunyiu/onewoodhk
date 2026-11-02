@@ -90,9 +90,9 @@ function renderQuoteDetail(q) {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-[5fr_1fr] gap-6">
         <!-- 主要內容 -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="space-y-6">
           <!-- 客戶資訊 -->
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-3">客戶資訊</h2>
