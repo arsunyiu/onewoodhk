@@ -187,16 +187,16 @@ function renderQuoteForm(existing) {
             <table class="w-full text-sm table-fixed">
               <thead>
                 <tr class="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-                  <th class="px-3 py-2 font-medium w-[11%]">工程分類</th>
-                  <th class="px-3 py-2 font-medium w-[24%]">產品/項目</th>
-                  <th class="px-3 py-2 font-medium w-[6%]">Location<br/>位置</th>
-                  <th class="px-3 py-2 font-medium w-[19%]">說明</th>
-                  <th class="px-3 py-2 font-medium w-[5%]">單位</th>
-                  <th class="px-3 py-2 font-medium w-[6%]">數量</th>
-                  <th class="px-3 py-2 font-medium w-[9%]">單價</th>
-                  <th class="px-3 py-2 font-medium w-[5%]">折扣%</th>
+                  <th class="px-3 py-2 font-medium w-[10%]">工程分類</th>
+                  <th class="px-3 py-2 font-medium w-[18%]">產品/項目</th>
+                  <th class="px-3 py-2 font-medium w-[8%]">Location<br/>位置</th>
+                  <th class="px-3 py-2 font-medium w-[15%]">說明</th>
+                  <th class="px-3 py-2 font-medium w-[8%]">單位</th>
+                  <th class="px-3 py-2 font-medium w-[8%]">數量</th>
+                  <th class="px-3 py-2 font-medium w-[8%]">單價</th>
+                  <th class="px-3 py-2 font-medium w-[8%]">折扣%</th>
                   <th class="px-3 py-2 font-medium text-right w-[9%]">小計</th>
-                  <th class="px-3 py-2 w-[6%]"></th>
+                  <th class="px-3 py-2 w-[8%]"></th>
                 </tr>
               </thead>
               <tbody id="qf-items-body"></tbody>
