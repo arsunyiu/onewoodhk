@@ -111,7 +111,7 @@ function renderQuoteForm(existing) {
     .join('')
 
   setMainContent(`
-    <div class="max-w-5xl mx-auto">
+    <div class="w-full">
       <div class="flex items-center justify-between mb-5">
         <div>
           <h1 class="text-xl font-bold text-gray-800">${isEdit ? '編輯報價單' : '新增報價單'}</h1>

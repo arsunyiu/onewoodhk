@@ -38,7 +38,7 @@ function renderCustomerDetail(cust) {
   const canEdit = Auth.isManagerUp() || (Auth.getUser() && Auth.getUser().id === cust.owner_id)
 
   setMainContent(`
-    <div class="max-w-5xl mx-auto">
+    <div class="w-full">
       <div class="flex items-start justify-between mb-5">
         <div>
           <div class="flex items-center gap-3">

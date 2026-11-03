@@ -399,7 +399,7 @@ function renderSupplierDetail(s) {
   const meta = SUPPLIER_TYPE_META[s.type] || { label: s.type, color: 'bg-gray-100 text-gray-600' }
 
   setMainContent(`
-    <div class="max-w-4xl mx-auto">
+    <div class="w-full">
       <div class="flex items-start justify-between mb-5">
         <div>
           <div class="flex items-center gap-3">
