@@ -819,7 +819,7 @@ const PDF_LABELS = {
     docNoLabelQuote: '報價單號：', docNoLabelInvoice: '發票編號：',
     issueDateLabelQuote: '日期：', issueDateLabelInvoice: '發票日期：',
     relatedQuoteNo: '對應報價單號：', validUntil: '有效期限：',
-    customer: '客戶：', siteAddress: '工程地址：', contactPhone: '聯絡電話：',
+    customer: '客戶：', siteAddress: '工程地址：', contactPhone: '聯絡人：',
     summaryTitle: '滙總', breakdownTitle: '細分報價',
     itemCol: '項目', descCol: '說明', amountCol: '金額', noCol: '編號',
     locationCol: '位置', qtyCol: '數量', unitCol: '單位', priceCol: '單價', subtotalCol: '小計',
@@ -843,7 +843,7 @@ const PDF_LABELS = {
     docNoLabelQuote: 'Quotation No.: ', docNoLabelInvoice: 'Invoice No.: ',
     issueDateLabelQuote: 'Date: ', issueDateLabelInvoice: 'Invoice Date: ',
     relatedQuoteNo: 'Related Quotation No.: ', validUntil: 'Valid Until: ',
-    customer: 'Customer: ', siteAddress: 'Site Address: ', contactPhone: 'Contact Phone: ',
+    customer: 'Customer: ', siteAddress: 'Site Address: ', contactPhone: 'Contact: ',
     summaryTitle: 'SUMMARY', breakdownTitle: 'BREAKDOWN',
     itemCol: 'Item', descCol: 'Description', amountCol: 'Amount', noCol: 'No.',
     locationCol: 'Location', qtyCol: 'Qty', unitCol: 'Unit', priceCol: 'Unit Price', subtotalCol: 'Sub-total',
@@ -1044,7 +1044,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
         ? `<div><span style="font-weight:700;">${L.relatedQuoteNo}</span>${esc(q.quote_no)}</div>`
         : `<div><span style="font-weight:700;">${L.validUntil}</span>${Fmt.date(q.valid_until)}</div>`}
       <div><span style="font-weight:700;">${L.customer}</span>${esc(q.company_name)}</div>
-      ${q.contact_phone ? `<div><span style="font-weight:700;">${L.contactPhone}</span>${esc(q.contact_phone)}</div>` : ''}
+      ${(q.contact && q.contact.name) || q.contact_phone ? `<div><span style="font-weight:700;">${L.contactPhone}</span>${(q.contact && q.contact.name) ? esc(q.contact.name) + (q.contact_phone ? '　' : '') : ''}${esc(q.contact_phone || '')}</div>` : ''}
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">${L.siteAddress}</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
