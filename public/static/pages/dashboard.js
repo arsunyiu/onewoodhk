@@ -243,12 +243,12 @@ function renderDashboard(d, r, ps, activeProjects, finance) {
       extra: dashSparkline(revenueBars.length ? revenueBars : [0, 0], '#3d604b') + `<div class="mt-1">${dashTrendBadge(revenuePct)}</div>`
     })}
     ${dashCard({
-      icon: 'fa-helmet-safety',
-      badge: 'SITES',
+      icon: 'fa-file-signature',
+      badge: 'QUOTES',
       badgeCls: 'bg-primary-500/15 text-primary-500',
       label: '在建工程',
-      sub2: '進行中工地 · ACTIVE PROJECTS',
-      value: `${ps.in_progress || 0}`,
+      sub2: '已建立報價單 · ACTIVE PROJECTS',
+      value: `${d.quote_total || 0}`,
       extra: dashSparkBars(statusBars, 'bg-primary-500/70') + `<p class="text-[11px] text-ink-400 mt-1">共 ${ps.total || 0} 個工程 · 未開工 ${ps.not_started || 0}</p>`
     })}
     ${card3}

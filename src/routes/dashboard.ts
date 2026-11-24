@@ -33,6 +33,13 @@ dashboard.get('/summary', async (c) => {
     .bind(...params)
     .all<any>()
 
+  // 報價單總數（不分狀態，全部已建立的報價單筆數）— 首頁「在建工程」卡片用
+  const quoteTotalRow = await c.env.DB.prepare(
+    `SELECT COUNT(*) as cnt FROM quotes WHERE ${clause}`
+  )
+    .bind(...params)
+    .first<any>()
+
   // 本月成交金額
   const wonThisMonth = await c.env.DB.prepare(
     `SELECT COALESCE(SUM(total_amount),0) as amount, COUNT(*) as cnt
@@ -104,6 +111,7 @@ dashboard.get('/summary', async (c) => {
       amount: wonThisMonth?.amount || 0,
       count: wonThisMonth?.cnt || 0
     },
+    quote_total: quoteTotalRow?.cnt || 0,
     pending_approvals: pendingApprovals,
     upcoming_tasks: upcomingTasks.results || []
   })
