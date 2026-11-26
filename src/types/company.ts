@@ -11,14 +11,14 @@ export const COMPANY_INFO = {
   website: 'onewood.com.hk',
   email: 'sales@onewood.com.hk',
   bank: {
-    name: '華僑永享 OCBC',
-    accountNo: '035-802156138831',
+    name: '華僑永享 OCBC (035)',
+    accountNo: '802156138831',
     accountName: 'One Wood Limited',
     fpsPhone: '95555124'
   },
   bank2: {
-    name: '中國銀行 BOC',
-    accountNo: '01227468933606',
+    name: '中國銀行 BOC (012)',
+    accountNo: '012-91820804309',
     accountName: 'One Wood Limited'
   },
   quoteValidDays: 30,
