@@ -963,22 +963,22 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.remarkTitle}</div>
       <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(trFreeText(invoiceData.remark))}</div>` : '')
     : (q.terms ? `
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.termsTitle}</div>
-      <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(trFreeText(q.terms))}</div>` : '')
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:2px;">${L.termsTitle}</div>
+      <div style="font-size:10px;color:#4b5563;white-space:pre-line;line-height:1.3;">${esc(trFreeText(q.terms))}</div>` : '')
 
   // 收款資訊：與條款/付款方式並排兩欄顯示（節省版面高度，讓 SUMMARY 頁含簽署確認欄能收在同一頁）
   // 兩個收款戶口（OCBC / BOC）並排左右兩欄顯示，方便客戶選擇任一戶口轉帳
   const bank2Name = lang === 'en' ? COMPANY_INFO.bank2.nameEn : COMPANY_INFO.bank2.name
   const bankInfoInnerHtml = `
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.bankInfoTitle}</div>
+      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:2px;">${L.bankInfoTitle}</div>
       <div style="display:flex;gap:24px;">
-        <div style="font-size:11px;color:#4b5563;line-height:1.5;">
+        <div style="font-size:10px;color:#4b5563;line-height:1.3;">
           <div>${L.bankLabel}${esc(bankName)}</div>
           <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank.accountNo)}</div>
           <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank.accountName)}</div>
           <div>${L.fpsLabel}${esc(COMPANY_INFO.bank.fpsPhone)}</div>
         </div>
-        <div style="font-size:11px;color:#4b5563;line-height:1.5;">
+        <div style="font-size:10px;color:#4b5563;line-height:1.3;">
           <div>${L.bankLabel}${esc(bank2Name)}</div>
           <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank2.accountNo)}</div>
           <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank2.accountName)}</div>
@@ -989,39 +989,39 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 收款資訊與條款/付款方式改為上下堆疊顯示（收款資訊在上，條款在下），
   // 不再左右並排——並排時條款內容較長會被壓縮成兩欄過窄，不易閱讀
   const bankTermsBlock = `
-    <div class="pdf-row" style="margin-top:14px;">
+    <div class="pdf-row" style="margin-top:8px;">
       <div>${bankInfoInnerHtml}</div>
-      ${termsInnerHtml ? `<div style="margin-top:12px;">${termsInnerHtml}</div>` : ''}
+      ${termsInnerHtml ? `<div style="margin-top:6px;">${termsInnerHtml}</div>` : ''}
     </div>`
 
   // 報價單：備註 Remarks（客戶條款聲明，如材料範圍/不包含項目/變更需簽署確認等），發票不顯示
   const remarksBlock = (!isInvoice && q.remarks) ? `
-    <div class="pdf-row" style="margin-top:12px;">
-      <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:3px;">${L.remarksTitle}</div>
-      <div style="font-size:10px;color:#6b7280;white-space:pre-line;line-height:1.45;">${esc(trFreeText(q.remarks))}</div>
+    <div class="pdf-row" style="margin-top:6px;">
+      <div style="font-weight:700;font-size:10px;color:#1f2937;margin-bottom:2px;">${L.remarksTitle}</div>
+      <div style="font-size:9px;color:#6b7280;white-space:pre-line;line-height:1.3;">${esc(trFreeText(q.remarks))}</div>
     </div>` : ''
 
   // 簽署確認欄：僅在 Summary 頁條款下方顯示一次，供雙方簽署確認（甲方：本公司／乙方：客戶確認）
   // 簽名留白高度已縮減，確保整個 SUMMARY 頁（含此簽署欄）能收在同一頁，不再溢出到下一頁
   const signatureBlock = `
-    <div class="pdf-row" style="margin-top:8px;">
-      <div style="background:#dce1e7;padding:3px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
+    <div class="pdf-row" style="margin-top:5px;">
+      <div style="background:#dce1e7;padding:2px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
       <!-- 用CSS grid明確分3列（說明文字/簽名留白/簽名線），同一列高度左右共用，
            確保無論說明文字長短不一，中間簽名留白與底部簽名線都能左右對齊同一水平 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 32px auto;gap:0 24px;margin-top:6px;font-size:11px;color:#1f2937;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 20px auto;gap:0 24px;margin-top:4px;font-size:11px;color:#1f2937;">
         <div style="grid-column:1;grid-row:1;">
           <div>${L.signOnBehalf}</div>
-          <div style="font-weight:700;margin-top:2px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
+          <div style="font-weight:700;margin-top:1px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
         </div>
         <div style="grid-column:2;grid-row:1;">
           <div>${L.signAccepted}</div>
-          <div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.4;">${esc(L.signAcceptedStatement)}</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:1px;line-height:1.3;">${esc(L.signAcceptedStatement)}</div>
         </div>
-        <div style="grid-column:1;grid-row:3;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+        <div style="grid-column:1;grid-row:3;border-top:1.5px solid #1f2937;padding-top:2px;line-height:1.4;">
           <div>${L.signBy}</div>
           <div>${L.signDate}</div>
         </div>
-        <div style="grid-column:2;grid-row:3;border-top:1.5px solid #1f2937;padding-top:3px;line-height:1.6;">
+        <div style="grid-column:2;grid-row:3;border-top:1.5px solid #1f2937;padding-top:2px;line-height:1.4;">
           <div>${L.signBy}</div>
           <div>${L.signDate}</div>
         </div>
@@ -1031,23 +1031,23 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
   // 共用文件抬頭（Logo/公司資訊/文件編號等），Summary 頁與 Breakdown 頁各自重複顯示一次
   const headerBlockHtml = (sectionTitle) => `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <img src="/static/images/logo.png" style="width:44px;height:44px;object-fit:contain;" crossorigin="anonymous" />
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="/static/images/logo.png" style="width:36px;height:36px;object-fit:contain;" crossorigin="anonymous" />
         <div>
-          <div style="font-size:24px;font-weight:700;">${esc(companyName)}</div>
+          <div style="font-size:20px;font-weight:700;">${esc(companyName)}</div>
         </div>
       </div>
-      <div style="font-size:15px;font-weight:600;color:#374151;padding-top:4px;">${docLabel}</div>
+      <div style="font-size:14px;font-weight:600;color:#374151;padding-top:2px;">${docLabel}</div>
     </div>
 
-    <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.4;">
+    <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.3;">
       <div>${esc(companyAddress)}</div>
       <div>Tel: ${esc(COMPANY_INFO.phone)} ｜ ${esc(COMPANY_INFO.email)} ｜ ${esc(COMPANY_INFO.website)}</div>
     </div>
 
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:10px 0;">
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:6px 0;">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 24px;font-size:11px;">
       <div><span style="font-weight:700;">${docNoLabel}</span>${esc(docNo)}</div>
       <div><span style="font-weight:700;">${issueDateLabel}</span>${issueDate}</div>
       ${isInvoice
@@ -1058,7 +1058,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       ${siteAddress ? `<div style="grid-column:1/-1;"><span style="font-weight:700;">${L.siteAddress}</span>${esc(siteAddress)}</div>` : ''}
     </div>
 
-    <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:1px;color:#1f2937;margin-top:10px;padding-bottom:6px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
+    <div style="text-align:center;font-weight:700;font-size:12px;letter-spacing:1px;color:#1f2937;margin-top:6px;padding-bottom:3px;border-bottom:2px solid ${headerColor};">${sectionTitle}</div>`
 
   // ---- Summary 頁：報價單顯示各分類滙總（仿照參考報價單 SUMMARY 頁）；
   // 發票僅顯示此張發票專屬的金額與備註，不套用報價單全額/合併備註（支援分期收款） ----
@@ -1146,7 +1146,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
     ${summaryTotalsHtml}
 
-    <div class="pdf-row" style="margin-top:10px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:6px;">
+    <div class="pdf-row" style="margin-top:6px;text-align:center;font-size:11px;font-weight:600;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:4px;">
       ${esc(amountInWordsText)}
     </div>
 
@@ -1156,7 +1156,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
 
     ${signatureBlock}
 
-    <div class="pdf-row" style="margin-top:14px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
+    <div class="pdf-row" style="margin-top:6px;padding-top:4px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;">
       ${esc(footerNote)} ｜ ${esc(companyName)} ｜ Tel: ${esc(COMPANY_INFO.phone)}
     </div>`
 
