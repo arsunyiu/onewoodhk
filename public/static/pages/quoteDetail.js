@@ -1008,7 +1008,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="background:#dce1e7;padding:2px 10px;font-weight:700;font-size:11px;color:#1f2937;">${L.signTitle}</div>
       <!-- 用CSS grid明確分3列（說明文字/簽名留白/簽名線），同一列高度左右共用，
            確保無論說明文字長短不一，中間簽名留白與底部簽名線都能左右對齊同一水平 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 20px auto;gap:0 24px;margin-top:4px;font-size:11px;color:#1f2937;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 36px auto;gap:0 24px;margin-top:4px;font-size:11px;color:#1f2937;">
         <div style="grid-column:1;grid-row:1;">
           <div>${L.signOnBehalf}</div>
           <div style="font-weight:700;margin-top:1px;">${esc(COMPANY_INFO.nameEn.toUpperCase())}</div>
