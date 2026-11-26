@@ -19,7 +19,8 @@ export const COMPANY_INFO = {
   bank2: {
     name: '中國銀行 BOC (012)',
     accountNo: '012-91820804309',
-    accountName: 'One Wood Limited'
+    accountName: 'One Wood Limited',
+    fpsPhone: '135197184'
   },
   quoteValidDays: 30,
   // 香港無銷售稅（VAT/GST），報價單預設不計稅

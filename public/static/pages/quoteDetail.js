@@ -982,6 +982,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
           <div>${L.bankLabel}${esc(bank2Name)}</div>
           <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank2.accountNo)}</div>
           <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank2.accountName)}</div>
+          <div>${L.fpsLabel}${esc(COMPANY_INFO.bank2.fpsPhone)}</div>
         </div>
       </div>`
 
