@@ -967,13 +967,22 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
       <div style="font-size:11px;color:#4b5563;white-space:pre-line;">${esc(trFreeText(q.terms))}</div>` : '')
 
   // 收款資訊：與條款/付款方式並排兩欄顯示（節省版面高度，讓 SUMMARY 頁含簽署確認欄能收在同一頁）
+  // 兩個收款戶口（OCBC / BOC）並排左右兩欄顯示，方便客戶選擇任一戶口轉帳
+  const bank2Name = lang === 'en' ? COMPANY_INFO.bank2.nameEn : COMPANY_INFO.bank2.name
   const bankInfoInnerHtml = `
       <div style="font-weight:700;font-size:11px;color:#1f2937;margin-bottom:4px;">${L.bankInfoTitle}</div>
-      <div style="font-size:11px;color:#4b5563;line-height:1.5;">
-        <div>${L.bankLabel}${esc(bankName)}</div>
-        <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank.accountNo)}</div>
-        <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank.accountName)}</div>
-        <div>${L.fpsLabel}${esc(COMPANY_INFO.bank.fpsPhone)}</div>
+      <div style="display:flex;gap:24px;">
+        <div style="font-size:11px;color:#4b5563;line-height:1.5;">
+          <div>${L.bankLabel}${esc(bankName)}</div>
+          <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank.accountNo)}</div>
+          <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank.accountName)}</div>
+          <div>${L.fpsLabel}${esc(COMPANY_INFO.bank.fpsPhone)}</div>
+        </div>
+        <div style="font-size:11px;color:#4b5563;line-height:1.5;">
+          <div>${L.bankLabel}${esc(bank2Name)}</div>
+          <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank2.accountNo)}</div>
+          <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank2.accountName)}</div>
+        </div>
       </div>`
 
   // 收款資訊與條款/付款方式改為上下堆疊顯示（收款資訊在上，條款在下），

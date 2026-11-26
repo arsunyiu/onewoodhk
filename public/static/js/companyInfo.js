@@ -17,6 +17,12 @@ const COMPANY_INFO = {
     accountName: 'One Wood Limited',
     fpsPhone: '95555124'
   },
+  bank2: {
+    name: '中國銀行 BOC',
+    nameEn: 'Bank of China (Hong Kong)',
+    accountNo: '01227468933606',
+    accountName: 'One Wood Limited'
+  },
   quoteValidDays: 30,
   footerNote: '此報價單經雙方簽署後具有合約效力',
   footerNoteEn: 'This quotation is contractually binding once signed by both parties',
