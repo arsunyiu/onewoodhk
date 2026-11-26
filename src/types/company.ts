@@ -11,16 +11,16 @@ export const COMPANY_INFO = {
   website: 'onewood.com.hk',
   email: 'sales@onewood.com.hk',
   bank: {
-    name: '華僑永享 OCBC (035)',
-    accountNo: '802156138831',
+    name: '中國銀行 BOC (012)',
+    accountNo: '012-91820804309',
     accountName: 'One Wood Limited',
     fpsPhone: '95555124'
   },
   bank2: {
-    name: '中國銀行 BOC (012)',
-    accountNo: '012-91820804309',
+    name: '華僑永享 OCBC (035)',
+    accountNo: '802156138831',
     accountName: 'One Wood Limited',
-    fpsPhone: '135197184'
+    fpsId: '156138831'
   },
   quoteValidDays: 30,
   // 香港無銷售稅（VAT/GST），報價單預設不計稅

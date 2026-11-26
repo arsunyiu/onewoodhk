@@ -11,18 +11,18 @@ const COMPANY_INFO = {
   website: 'onewood.com.hk',
   email: 'sales@onewood.com.hk',
   bank: {
-    name: '華僑永享 OCBC (035)',
-    nameEn: 'OCBC Wing Hang Bank (035)',
-    accountNo: '802156138831',
-    accountName: 'One Wood Limited',
-    fpsPhone: '95555124'
-  },
-  bank2: {
     name: '中國銀行 BOC (012)',
     nameEn: 'Bank of China (Hong Kong) (012)',
     accountNo: '012-91820804309',
     accountName: 'One Wood Limited',
-    fpsPhone: '135197184'
+    fpsPhone: '95555124'
+  },
+  bank2: {
+    name: '華僑永享 OCBC (035)',
+    nameEn: 'OCBC Wing Hang Bank (035)',
+    accountNo: '802156138831',
+    accountName: 'One Wood Limited',
+    fpsId: '156138831'
   },
   quoteValidDays: 30,
   footerNote: '此報價單經雙方簽署後具有合約效力',

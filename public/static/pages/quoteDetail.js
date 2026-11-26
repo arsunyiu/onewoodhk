@@ -826,7 +826,7 @@ const PDF_LABELS = {
     subtotalLabel: '小計',
     amountDue: (quoteNo) => `本次應付款項（對應報價單 ${quoteNo}）`,
     remarkTitle: '備註', termsTitle: '條款/付款方式', bankInfoTitle: '收款資訊',
-    bankLabel: '銀行：', accountNoLabel: '帳號：', accountNameLabel: '戶名：', fpsLabel: '轉數快(FPS) 電話號碼：',
+    bankLabel: '銀行：', accountNoLabel: '帳號：', accountNameLabel: '戶名：', fpsLabel: '轉數快(FPS) 電話號碼：', fpsIdLabel: '轉數快(FPS) 識別碼：',
     remarksTitle: '備註',
     signTitle: '簽署確認：', signOnBehalf: '代表本公司', signAccepted: '客戶確認接受',
     signAcceptedStatement: '本人/吾等茲確認接受此報價單，並授權按上述條款進行相關工程。',
@@ -850,7 +850,7 @@ const PDF_LABELS = {
     subtotalLabel: 'Sub-total',
     amountDue: (quoteNo) => `Amount Due (Ref. Quotation ${quoteNo})`,
     remarkTitle: 'Remarks', termsTitle: 'Terms & Payment', bankInfoTitle: 'Payment Details',
-    bankLabel: 'Bank: ', accountNoLabel: 'Account No.: ', accountNameLabel: 'Name: ', fpsLabel: 'FPS Phone No.: ',
+    bankLabel: 'Bank: ', accountNoLabel: 'Account No.: ', accountNameLabel: 'Name: ', fpsLabel: 'FPS Phone No.: ', fpsIdLabel: 'FPS ID: ',
     remarksTitle: 'Remarks',
     signTitle: 'Signed & Confirmation:', signOnBehalf: 'For and on behalf of', signAccepted: 'Accepted & Confirmed By',
     signAcceptedStatement: 'I/We hereby accept this quotation and authorize the works to proceed under the listed terms.',
@@ -982,7 +982,7 @@ function buildQuotePdfHtml(q, docType, invoiceData) {
           <div>${L.bankLabel}${esc(bank2Name)}</div>
           <div>${L.accountNoLabel}${esc(COMPANY_INFO.bank2.accountNo)}</div>
           <div>${L.accountNameLabel}${esc(COMPANY_INFO.bank2.accountName)}</div>
-          <div>${L.fpsLabel}${esc(COMPANY_INFO.bank2.fpsPhone)}</div>
+          <div>${L.fpsIdLabel}${esc(COMPANY_INFO.bank2.fpsId)}</div>
         </div>
       </div>`
 
